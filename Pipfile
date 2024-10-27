@@ -12,6 +12,8 @@ transformers = "*"
 torch = "*"
 diffusers = "*"
 peft = "*"
+huggingface-hub = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

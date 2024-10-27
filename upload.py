@@ -1,55 +1,49 @@
-from huggingface_hub import HfApi, HfFolder, hf_hub_upload
+from huggingface_hub import HfApi
 import os
-import subprocess
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Access Hugging Face API token
 hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
-HfFolder.save_token(hf_access_token)
+print(hf_access_token)  # Print to confirm loading, remove in production
 
-MODEL_PATH = '/raid/aag/scasper/models/'
+# Base path to your models directory
+MODEL_PATH = "/Users/klu/ErasingDiffusionModels/models/"
+hf_username = "kevinlu4588"  # replace with your Hugging Face username or org name
 
-def run_cleanup():
-    try:
-        subprocess.run(["python", "clean_folder.py"], check=True)
-        print("Cleanup completed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running cleanup script: {e}")
-    except FileNotFoundError:
-        print("clean_folder.py not found in the current directory.")
+api = HfApi()
 
 def is_repo_empty(repo_id):
-    api = HfApi()
     try:
         files = api.list_repo_files(repo_id)
         return len(files) <= 2
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error checking repository {repo_id}: {e}")
         return True
 
-def upload_pt_file(subdir, model_name, ckpt):
-    file_path = f"{MODEL_PATH}{subdir}/{model_name}{ckpt}.pt"
-    repo_id = f"LLM-GAT/{model_name}{ckpt}"
+def upload_model_folder(subfolder_path):
+    model_name = os.path.basename(subfolder_path)
+    repo_id = f"{hf_username}/{model_name}"
+    
+    # Create the repo if it doesn't exist, or skip if it has files
+    api.create_repo(repo_id, exist_ok=True, token=hf_access_token)
     if is_repo_empty(repo_id):
-        hf_hub_upload(repo_id=repo_id, path_or_fileobj=file_path, token=hf_access_token)
-        print(f"Uploaded {file_path} to {repo_id}")
+        print(f"Uploading {subfolder_path} to {repo_id}...")
+        api.upload_folder(folder_path=subfolder_path,
+                          repo_id=repo_id,
+                          repo_type="model",
+                          token=hf_access_token)
+        print(f"Successfully uploaded {subfolder_path} to {repo_id}.")
     else:
-        print(f"Repository {repo_id} is not empty. Skipping upload.")
-
-subdirs = ['gd']
-model_names = ['llama3_gd_lora-256-128_beta-14_bs-32_lr-1e-04_checkpoint-']
-ckpts = list(range(1, 9))
+        print(f"Repository {repo_id} already contains files. Skipping upload.")
 
 def main():
-    missing_models = []
-    for subdir, model in zip(subdirs, model_names):
-        for ckpt in ckpts:
-            file_path = f"{MODEL_PATH}{subdir}/{model}{ckpt}.pt"
-            if os.path.isfile(file_path):
-                print(f"Uploading {file_path}...")
-                upload_pt_file(subdir, model, ckpt)
-            else:
-                missing_models.append(file_path)
-            run_cleanup()
-    print('MISSING MODELS:', missing_models)
+    for subfolder in os.listdir(MODEL_PATH):
+        subfolder_path = os.path.join(MODEL_PATH, subfolder)
+        if os.path.isdir(subfolder_path):
+            upload_model_folder(subfolder_path)
 
 if __name__ == "__main__":
     main()
