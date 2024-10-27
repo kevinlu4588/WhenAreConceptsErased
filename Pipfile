@@ -11,6 +11,7 @@ numpy = "*"
 transformers = "*"
 torch = "*"
 diffusers = "*"
+peft = "*"
 
 [dev-packages]
 
