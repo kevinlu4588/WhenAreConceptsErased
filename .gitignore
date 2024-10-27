@@ -1,1 +1,5 @@
+# Ignore environment files
 .env
+
+# Ignore all .pt model files, regardless of location
+*.pt
