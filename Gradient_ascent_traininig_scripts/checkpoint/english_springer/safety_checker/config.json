@@ -1,0 +1,28 @@
+{
+  "_name_or_path": "/share/u/kevin/.cache/huggingface/hub/models--CompVis--stable-diffusion-v1-4/snapshots/133a221b8aa7292a167afc5127cb63fb5005638b/safety_checker",
+  "architectures": [
+    "StableDiffusionSafetyChecker"
+  ],
+  "initializer_factor": 1.0,
+  "logit_scale_init_value": 2.6592,
+  "model_type": "clip",
+  "projection_dim": 768,
+  "text_config": {
+    "dropout": 0.0,
+    "hidden_size": 768,
+    "intermediate_size": 3072,
+    "model_type": "clip_text_model",
+    "num_attention_heads": 12
+  },
+  "torch_dtype": "float32",
+  "transformers_version": "4.41.0",
+  "vision_config": {
+    "dropout": 0.0,
+    "hidden_size": 1024,
+    "intermediate_size": 4096,
+    "model_type": "clip_vision_model",
+    "num_attention_heads": 16,
+    "num_hidden_layers": 24,
+    "patch_size": 14
+  }
+}

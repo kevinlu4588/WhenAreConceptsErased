@@ -3,3 +3,9 @@
 
 # Ignore all .pt model files, regardless of location
 *.pt
+*.png
+*.jpg
+Miniconda3-latest-Linux-x86_64.sh
+
+eta_diffusers/
+*.safetensors
