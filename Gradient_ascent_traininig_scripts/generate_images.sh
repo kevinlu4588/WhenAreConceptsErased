@@ -1,75 +1,53 @@
-# OUTPUT_DIR="./data/english_springer_ti"
-# PROMPT="a photo of an english springer"
-# NUM_TRAIN_IMAGES=100
+#!/bin/bash
 
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode train \
-#     --num_train_images $NUM_TRAIN_IMAGES
+# List of objects and styles (one at a time)
+OBJECTS=(
+    # "English springer spaniel"
+    # "airliner"
+    # "garbage Truck"
+    # "parachute"
+    # "cassette player"
+    # "chainsaw"
+    # "tench"
+    # "French horn"
+    # "golf ball"
+    # "church"
+)
+# OBJECTS=(
+#     "church"
+# )
 
-# OUTPUT_DIR="./data/garbage_truck_ti"
-# PROMPT="a photo of a garbage truck"
-# NUM_TRAIN_IMAGES=100
+STYLES=(
+    "Van Gogh"
+    "Picasso"
+    "Andy Warhol"
+#     "Thomas Kinkaide"
+#     "Killian Eng"
+)
 
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode train \
-#     --num_train_images $NUM_TRAIN_IMAGES
+BASE_OUTPUT_DIR="/share/u/kevin/ErasingDiffusionModels/testing_ga"
+NUM_TRAIN_IMAGES=500
 
-# OUTPUT_DIR="./data/kilian_eng_ti"
-# PROMPT="a painting in the style of Kilian Eng"
-# NUM_TRAIN_IMAGES=100
+# Uncomment one of these lines based on the desired mode (objects or styles)
+# TARGETS=("${OBJECTS[@]}")
+TARGETS=("${STYLES[@]}")
 
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode train \
-#     --num_train_images $NUM_TRAIN_IMAGES
+# Loop through the selected list (either objects or styles)
+for target in "${TARGETS[@]}"; do
+    if [[ " ${OBJECTS[*]} " =~ " ${target} " ]]; then
+        PROMPT="a picture of a ${target}"
+    else
+        PROMPT="a painting in the style of ${target}"
+    fi
 
-# OUTPUT_DIR="./data/kilian_eng_ti"
-# PROMPT="a painting in the style of Thomas Kinkade"
-# NUM_TRAIN_IMAGES=100
-
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode train \
-#     --num_train_images $NUM_TRAIN_IMAGES
-
-# OUTPUT_DIR="./data/van_gogh_ti"
-# PROMPT="a painting in the style of Van Gogh"
-# NUM_TRAIN_IMAGES=100
-
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode train \
-#     --num_train_images $NUM_TRAIN_IMAGES
-
-OUTPUT_DIR="./generation/english_springer_erasure"
-PROMPT="a photo of an english springer spaniel"
-NUM_TRAIN_IMAGES=100
-
-python3 generate_training_images.py \
-    --output_dir $OUTPUT_DIR \
-    --prompt "$PROMPT" \
-    --mode train \
-    --num_train_images $NUM_TRAIN_IMAGES
-
-# PROMPT="a photo of a golden retriever"
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode test \
-#     --model_path "./checkpoint/english_springer_erasure" \
-#     --num_train_images $NUM_TRAIN_IMAGES
-
-# PROMPT="a photo of a american pit bull terrier"
-# python3 generate_training_images.py \
-#     --output_dir $OUTPUT_DIR \
-#     --prompt "$PROMPT" \
-#     --mode test \
-#     --model_path "./checkpoint/english_springer_erasure" \
-#     --num_train_images $NUM_TRAIN_IMAGES
+    OUTPUT_DIR="$BASE_OUTPUT_DIR/${target// /_}"
+    
+    echo "Generating images for: $PROMPT"
+    
+    # Call the Python script with the parameters
+    python3 generate_training_images.py \
+        --output_dir "$OUTPUT_DIR" \
+        --prompt "$PROMPT" \
+        --mode train \
+        --num_train_images "$NUM_TRAIN_IMAGES"
+done
