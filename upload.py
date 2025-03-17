@@ -9,7 +9,7 @@ load_dotenv()
 hf_access_token = os.getenv("HUGGINGFACE_API_KEY")
 print(hf_access_token)  # Print to confirm loading, remove in production
 
-# Base path to your models directory
+# Base  path to your models directory
 MODEL_PATH = "/Users/klu/ErasingDiffusionModels/models/"
 hf_username = "kevinlu4588"  # replace with your Hugging Face username or org name
 
