@@ -15,9 +15,9 @@ This project provides the following key components:
 
 1.  **Demo Notebooks**
 
--  **`inpainting_attack.ipynb`** — Demonstrates the inpainting attack to probe erased concepts.
+-  **`inpainting_attack_demo.ipynb`** — Demonstrates the inpainting attack to probe erased concepts.
 
--  **`noising_attack.ipynb`** — Showcases the Noising Attack, which adds noise to the diffusion trajectory to bypass concept erasure defenses.
+-  **`noising_attack_demo.ipynb`** — Showcases the Noising Attack, which adds noise to the diffusion trajectory to bypass concept erasure defenses.
 
   
 
@@ -54,10 +54,11 @@ To  train  a  model  with  gradient  ascent  for  concept  erasure,  run:
   
 
 ```bash
+./train_ga_model.sh
 
-python train_gradient_ascent.py --concept "target_concept" --epochs  200
 ```
   
+With the appropriate hyperparameters & concepts
 
 Noising Attack Details
 
