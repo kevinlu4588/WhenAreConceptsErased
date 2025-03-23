@@ -7,7 +7,7 @@ import torch
 import argparse
 
 from eta_diffusion import FineTunedModel, StableDiffuser
-from diffusers import StableDiffusionPipeline
+from noisy_diffusers import StableDiffusionPipeline
 from eta_diffusers.src.diffusers.schedulers.eta_ddim_scheduler import DDIMScheduler
 
 def parse_arguments():

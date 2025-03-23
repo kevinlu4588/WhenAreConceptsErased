@@ -1,7 +1,7 @@
 
 import torch
 import matplotlib.pyplot as plt
-from diffusers import StableDiffusionPipeline, AutoPipelineForInpainting
+from noisy_diffusers import StableDiffusionPipeline, AutoPipelineForInpainting
 from PIL import Image, ImageDraw
 import numpy as np
 import tqdm
@@ -17,7 +17,7 @@ def load_model_inpaint_pipeline(model_folder_path, foundation_path):
         Returns:
             StableDiffusionInpaintPipeline: The inpainting pipeline with updated weights.
         """
-        from diffusers import StableDiffusionInpaintPipeline
+        from noisy_diffusers import StableDiffusionInpaintPipeline
         import torch
         import os
 

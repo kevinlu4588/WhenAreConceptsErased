@@ -1,5 +1,5 @@
 from datasets import load_dataset
-from diffusers import StableDiffusionPipeline
+from noisy_diffusers import StableDiffusionPipeline
 import torch
 import os
 import json

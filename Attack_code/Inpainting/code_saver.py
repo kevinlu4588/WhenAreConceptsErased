@@ -1,9 +1,9 @@
 import torch
-from diffusers import StableDiffusionPipeline, AutoencoderKL, UNet2DConditionModel, DDIMScheduler
+from noisy_diffusers import StableDiffusionPipeline, AutoencoderKL, UNet2DConditionModel, DDIMScheduler
 from transformers import CLIPTextModel, CLIPTokenizer
 
 import torch
-from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, AutoencoderKL, UNet2DConditionModel, DDIMScheduler, StableDiffusionInpaintPipeline
+from noisy_diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, AutoencoderKL, UNet2DConditionModel, DDIMScheduler, StableDiffusionInpaintPipeline
 from transformers import CLIPTextModel, CLIPTokenizer
 import matplotlib.pyplot as plt
 

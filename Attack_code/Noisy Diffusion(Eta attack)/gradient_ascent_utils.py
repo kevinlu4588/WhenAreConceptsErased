@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 import numpy as np
-from diffusers import StableDiffusionPipeline, DDIMScheduler
+from noisy_diffusers import StableDiffusionPipeline, DDIMScheduler
 class ExperimentImageSet:
     def __init__(self, stable_diffusion, eta_0_image, attack_images, original_interference_images = None, interference_images = None, prompt: str = None, interference_prompt1 = None, interference_prompt2 = None, seed: int = None):
         self.stable_diffusion: np.ndarray = stable_diffusion

@@ -7,14 +7,14 @@ import copy
 import os
 import re
 import numpy as np
-from diffusers import AutoencoderKL, UNet2DConditionModel
+from noisy_diffusers import AutoencoderKL, UNet2DConditionModel
 from PIL import Image
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPFeatureExtractor
-from diffusers.schedulers import EulerAncestralDiscreteScheduler
+from noisy_diffusers.schedulers import EulerAncestralDiscreteScheduler
 from eta_diffusers.src.diffusers.schedulers.eta_ddim_scheduler import DDIMScheduler
-from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
-from diffusers.schedulers.scheduling_lms_discrete import LMSDiscreteScheduler
+from noisy_diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+from noisy_diffusers.schedulers.scheduling_lms_discrete import LMSDiscreteScheduler
 # from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
 
 def show_image_grid(img_files, num_rows=3, num_cols=4, fig_size=(15, 10)):

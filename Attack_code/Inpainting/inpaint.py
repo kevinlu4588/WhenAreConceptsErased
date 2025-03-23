@@ -7,7 +7,7 @@ import torch
 from io import BytesIO
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-from diffusers import StableDiffusionInpaintPipeline
+from noisy_diffusers import StableDiffusionInpaintPipeline
 
 def inpaint(init_image, mask_coord_list, model):
         
