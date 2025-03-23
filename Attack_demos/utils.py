@@ -1,7 +1,7 @@
 
 import torch
 import matplotlib.pyplot as plt
-from noisy_diffusers import StableDiffusionPipeline, AutoPipelineForInpainting
+from diffusers import StableDiffusionPipeline, AutoPipelineForInpainting
 from PIL import Image, ImageDraw
 import numpy as np
 import tqdm
