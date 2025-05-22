@@ -15,10 +15,11 @@ This project provides the following key components:
 
 1.  **Demo Notebooks**
 
--  **`inpainting_attack_demo.ipynb`** — Demonstrates the inpainting attack to probe erased concepts.
+-  **`inpainting.ipynb`** — Demonstrates the use of inpainting to probe for erased concepts.
 
--  **`noising_attack_demo.ipynb`** — Showcases the Noising Attack, which adds noise to the diffusion trajectory to bypass concept erasure defenses.
+-  **`noise-based.ipynb`** — Showcases the Noise-Based probe, which adds noise to the diffusion trajectory to bypass concept erasure defenses.
 
+-  **`diffusion-completion.ipynb`** — Shows how diffusion completion is done, as well as the difference in erased model behavior when conditioned on latents from the original model.
   
 
 2.  **Training Scripts**
@@ -41,7 +42,7 @@ pip  install  -r  requirements.txt
 ### Running  the  Demos
 
   
-Open  either  inpainting_attack.ipynb  or  noising_attack.ipynb  in  Jupyter  Notebook.
+Open  either  inpainting.ipynb,  noise-based.ipynb, or diffusion-completion.ipynb  in  Jupyter  Notebook.
 
 Follow  the  instructions  in  each  notebook  to  run  the  attacks  and  visualize  the  results.
 
@@ -60,9 +61,9 @@ To  train  a  model  with  gradient  ascent  for  concept  erasure,  run:
   
 With the appropriate hyperparameters & concepts
 
-Noising Attack Details
+Noise-Based probe Details
 
-The Noising Attack is a training-free method that modifies the diffusion trajectory by adding controlled noise at each denoising step:
+The Noise-based probe is a training-free method that modifies the diffusion trajectory by adding controlled noise at each denoising step:
 
 x̃<sub>t−1</sub> = (x̃<sub>t</sub> − αϵ<sub>D</sub>) + ηϵ
 
@@ -80,7 +81,7 @@ Paper Reference
 
 If you use this code in your research, please cite:
 
-Where Do Erased Concepts Go in Diffusion Models? Anonymous Authors
+When are Concepts Really Erased in Diffusion Models? Anonymous Authors
 
 Contact
 
