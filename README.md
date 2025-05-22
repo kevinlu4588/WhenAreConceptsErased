@@ -3,7 +3,7 @@
 
   
 
-This repository accompanies the paper **"Where Do Erased Concepts Go in Diffusion Models?"**, which investigates concept erasure techniques in diffusion models and introduces the **Noising Attack**, a training-free inference-time attack.
+This repository accompanies the paper **"When are Concepts Really Erased in Diffusion Models?"**, which investigates concept erasure techniques in diffusion models via multiple different perspectives outside of the traditional optimized inputs (prompt/raw text embedding).
 
   
 
