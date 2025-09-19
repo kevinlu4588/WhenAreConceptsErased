@@ -1,11 +1,8 @@
 
-# Concept Erasure in Diffusion Models
+#[NeurIPS 2025] When are Concepts Erased from Diffusion Models?
 
-  
 
-This repository accompanies the paper **"When are Concepts Really Erased in Diffusion Models?"**, which investigates concept erasure techniques in diffusion models via multiple different perspectives outside of the traditional optimized inputs (prompt/raw text embedding).
-
-  
+This repository accompanies the paper **"When are Concepts Erased from Diffusion Modelss?"**, which investigates concept erasure techniques in diffusion models via multiple different perspectives outside of the traditional optimized inputs (prompt/raw text embedding).
 
 ## Overview
 
