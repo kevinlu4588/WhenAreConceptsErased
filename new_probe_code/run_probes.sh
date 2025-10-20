@@ -7,16 +7,16 @@
 # source ~/miniconda3/bin/activate try_env
 
 # --- Arguments you can easily modify ---
-CONCEPTS=("van_gogh")          # or ("all")
+CONCEPTS=("van_gogh" "airliner")          # or ("all")
 ERASING_TYPES=("esdx")                    # or ("esdx" "esdu" "uce" "ga")
-PROBES=("noisedbasedprobe")                            # or ("standardpromptprobe" "inpaintprobe" "textualinversionprobe")
+PROBES=("standardpromptprobe" "inpaintingprobe" "noisebasedprobe")                            # or ("standardpromptprobe" "inpaintprobe" "textualinversionprobe")
 NUM_IMAGES=10
 DEVICE="cuda"
 CONFIG="configs/default.yaml"
 PIPELINE_PATH=""                          # optional: set to explicit model path to override structure
 
 # --- Build the command ---
-CMD="python runner.py \
+CMD="python new_runner.py \
   --concepts ${CONCEPTS[*]} \
   --erasing_types ${ERASING_TYPES[*]} \
   --probes ${PROBES[*]} \

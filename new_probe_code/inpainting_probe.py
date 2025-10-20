@@ -6,7 +6,7 @@ from diffusers import StableDiffusionInpaintPipeline
 from base_probe import BaseProbe
 
 
-class InpaintProbe(BaseProbe):
+class InpaintingProbe(BaseProbe):
     def run(self, num_images=None, debug=False):
         """
         Generate inpainted images using base SD1.4 images and a fixed-size central mask.

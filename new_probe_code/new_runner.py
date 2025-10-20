@@ -79,7 +79,7 @@ def run_all(probes_to_run, erasing_types, concepts, num_images, device, config, 
                     config=config,
                 )
                 try:
-                    probe.run(num_images=num_images)
+                    probe.run(num_images=num_images, debug=True)
                 except Exception as e:
                     print(f"❌ {probe_name} failed for {concept} ({erasing_type}): {e}")
 

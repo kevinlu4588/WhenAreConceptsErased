@@ -32,7 +32,7 @@ class NoiseBasedProbe(BaseProbe):
                     image = self.pipe(
                         prompt, generator=generator, eta=eta, variance_scale=vscale
                     ).images[0]
-                    score = self.score(image, prompt)
+                    score = self.score(image, self.concept.replace("_", " "))
 
                     # Save all variants to the debug subfolder (using BaseProbe.save_image)
                     if debug:
