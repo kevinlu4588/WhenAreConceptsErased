@@ -5,3 +5,7 @@
 *.arrow
 *.json
 *.pt
+*.safetensors
+*.pkl
+*.bin
+*.pyc

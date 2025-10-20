@@ -26,9 +26,9 @@ class NoiseBasedProbe(BaseProbe):
         ):
             generator = torch.manual_seed(int(seed))
             best_image, best_score = None, float("-inf")
-
-            for eta in self.config.noise_based_probe_values:
-                for vscale in self.config.variance_scales:
+            print(self.config)
+            for eta in self.config['eta_values']:
+                for vscale in self.config['variance_scales']:
                     image = self.pipe(
                         prompt, generator=generator, eta=eta, variance_scale=vscale
                     ).images[0]
@@ -57,11 +57,11 @@ class NoiseBasedProbe(BaseProbe):
     # ------------------------------------------------------------------
     def score(self, image, prompt):
         """Default scoring logic — subclasses can override."""
-        if not hasattr(self.config, "score_type"):
+        if "score_type" not in self.config:
             return 0.0
-        if self.config.score_type.lower() == "clip":
+        if self.config['score_type'].lower() == "clip":
             return self._clip_score(image, prompt)
-        elif self.config.score_type.lower() == "classification":
+        elif self.config['score_type'].lower() == "classification":
             return self._classifier_score(image)
         else:
-            raise ValueError(f"Unknown score type: {self.config.score_type}")
+            raise ValueError(f"Unknown score type: {self.config['score_type']}")
