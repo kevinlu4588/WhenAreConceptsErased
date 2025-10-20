@@ -10,6 +10,7 @@ Most evaluation methods for concept erasure involve optimizing adversarial promp
 3. Classifier guidance
 
 And compare the model behavior against traditional probes (standard prompt, textual inversion, unlearndiffatk)
+
 ---
 
 ## Environment Setup
@@ -70,6 +71,9 @@ python runner.py \
 ```bash
 python evaluator.py
 ```
+The evaluation framework computes:
+- CLIP Similarity: Measures semantic similarity between generated images and target concepts
+- Classification Accuracy: Uses pre-trained classifiers to detect presence of erased concepts
 ---
 
 ## 🧪 Available Probes
@@ -82,14 +86,6 @@ Our framework includes multiple probing techniques to test concept erasure:
 - **Diffusion Compeletion**
 - **Classifier Guidance**
 
-## 📈 Evaluation Metrics
-
-The evaluation framework computes:
-- **CLIP Similarity**: Measures semantic similarity between generated images and target concepts
-- **Classification Accuracy**: Uses pre-trained classifiers to detect presence of erased concepts
-
----
-
 ## 📖 Citation
 
 If you find this work useful in your research, please consider citing:
@@ -97,7 +93,7 @@ If you find this work useful in your research, please consider citing:
 ```bibtex
 @inproceedings{lu2025concepts,
   title={When Are Concepts Erased From Diffusion Models?},
-  author={Lu, Kevin and others},
+  author={Kevin Lu, Nicky Kriplani, Rohit Gandikota, Minh Pham, David Bau, Chinmay Hegde, and Niv Cohen},
   booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
   year={2025}
 }
@@ -113,9 +109,8 @@ This research builds upon several concept erasure methods. If you use our evalua
 ```bibtex
 @inproceedings{gandikota2023erasing,
   title={Erasing Concepts from Diffusion Models},
-  author={Gandikota, Rohit and Materzynska, Joanna and Fiotto-Kaufman, Jaden and Bau, David},
-  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
-  pages={2426--2436},
+  author={Rohit Gandikota and Joanna Materzy\'nska and Jaden Fiotto-Kaufman and David Bau},
+  booktitle={Proceedings of the 2023 IEEE International Conference on Computer Vision},
   year={2023}
 }
 ```
