@@ -18,12 +18,28 @@ from probes.base_probe import BaseProbe
 def discover_probes(probes_dir: str):
     """Auto-discovers all subclasses of BaseProbe in a folder."""
     probe_classes = {}
+    
+    # Add the parent directory to sys.path so imports work
+    parent_dir = os.path.dirname(probes_dir)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+    
     for file in Path(probes_dir).glob("*_probe.py"):
-        module_name = file.stem
-        module = importlib.import_module(module_name)
-        for name, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, BaseProbe) and obj is not BaseProbe:
-                probe_classes[name.lower()] = obj
+        if file.stem == "base_probe":  # Skip the base class file
+            continue
+            
+        # Use the full module path: probes.module_name
+        module_name = f"probes.{file.stem}"
+        
+        try:
+            module = importlib.import_module(module_name)
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if issubclass(obj, BaseProbe) and obj is not BaseProbe:
+                    probe_classes[name.lower()] = obj
+                    print(f"✅ Discovered probe: {name}")
+        except ImportError as e:
+            print(f"⚠️ Failed to import {module_name}: {e}")
+            
     return probe_classes
 
 
@@ -86,9 +102,10 @@ def run_all(probes_to_run, concepts, num_images, device, config, erasing_type, p
 # ============================================================
 # 🧮 4️⃣ CLI Interface
 # ============================================================
+
 def main():
     parser = argparse.ArgumentParser(description="Run concept erasure probes.")
-    parser.add_argument("--concepts", nargs="+", default=["van_gogh"], help="Concepts to test")
+    parser.add_argument("--concept", nargs="+", help="Concepts to test")
     parser.add_argument("--probes", nargs="+", default=["all"], help="Which probes to run (default: all)")
     parser.add_argument("--num_images", type=int, default=10, help="Number of images per probe")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -103,12 +120,11 @@ def main():
         parser.error("❌ Please provide only one of --pipeline_path or --unet_path, not both.")
     if not args.pipeline_path and not args.unet_path:
         parser.error("❌ You must provide either --pipeline_path or --unet_path.")
-
+    print("hello")
     config = load_config(args.config)
-
     run_all(
         probes_to_run=args.probes,
-        concepts=args.concepts,
+        concepts=args.concept,
         num_images=args.num_images,
         device=args.device,
         config=config,
@@ -116,3 +132,6 @@ def main():
         pipeline_path=args.pipeline_path,
         unet_path=args.unet_path,
     )
+
+if __name__ == "__main__":
+    main()

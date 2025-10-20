@@ -36,6 +36,7 @@ class BaseProbe:
         self.device = device
         self.config = config
         self.probe_name = probe_name or self.__class__.__name__.lower()
+        self.prompt_csv = f"/share/u/kevin/DiffusionConceptErasure/final_data/prompts/{concept}.csv"
 
         # ============================================================
         # 🚀 Load base pipeline

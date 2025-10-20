@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import torch
 from noisy_diffuser_scheduling.schedulers.eta_ddim_scheduler import DDIMScheduler
-from base_probe import BaseProbe
+from probes.base_probe import BaseProbe
 
 
 class NoiseBasedProbe(BaseProbe):

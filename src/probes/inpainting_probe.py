@@ -3,7 +3,7 @@ from tqdm import tqdm
 from PIL import Image, ImageDraw
 import torch
 from diffusers import StableDiffusionInpaintPipeline
-from base_probe import BaseProbe
+from probes.base_probe import BaseProbe
 
 
 class InpaintingProbe(BaseProbe):

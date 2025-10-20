@@ -3,7 +3,7 @@ import subprocess
 from tqdm import tqdm
 import torch
 from diffusers import StableDiffusionPipeline
-from base_probe import BaseProbe
+from probes.base_probe import BaseProbe
 
 
 class TextualInversionProbe(BaseProbe):

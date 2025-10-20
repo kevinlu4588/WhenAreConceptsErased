@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from base_probe import BaseProbe
+from probes.base_probe import BaseProbe
 import torch
 
 class StandardPromptProbe(BaseProbe):

@@ -1,44 +1,51 @@
 #!/bin/bash
 # ================================================================
-# 🧠 Wrapper script for running concept-erasure probes
+# 🧠 Wrapper script for running and evaluating a single model
 # ================================================================
 
-# --- Arguments you can easily modify ---
-CONCEPTS=("english_springer_spaniel")            # or ("all")
-ERASING_TYPES=("esdx")                            # list of erasing methods
-PROBES=("noisebasedprobe")                         # list of probe types
+# --- User-configurable arguments ---
+CONCEPT="airliner"               
+ERASING_TYPE="esdx"              
+PROBES=("all")       
 NUM_IMAGES=10
 DEVICE="cuda"
 CONFIG="configs/default.yaml"
 
-PIPELINE_PATH="/share/u/kevin/ErasingDiffusionModels/final_models/esdx_airliner"    # optional, set explicit pipeline path
-UNET_PATH=""        # optional, set UNet path instead
+PIPELINE_PATH="kevinlu4588/esdx_airliner"
+UNET_PATH=""
 
-# --- Build the command ---
-CMD="python runner.py \
-  --concepts ${CONCEPTS[*]} \
-  --erasing_types ${ERASING_TYPES[*]} \
+# --- Build runner command ---
+RUN_CMD="python runner.py \
+  --concepts $CONCEPT \
+  --erasing_type $ERASING_TYPE \
   --probes ${PROBES[*]} \
   --num_images $NUM_IMAGES \
   --device $DEVICE \
   --config $CONFIG"
 
 if [[ -n "$PIPELINE_PATH" ]]; then
-  CMD+=" --pipeline_path $PIPELINE_PATH"
-fi
-
-if [[ -n "$UNET_PATH" ]]; then
-  CMD+=" --unet_path $UNET_PATH"
-fi
-
-# Validate
-if [[ -z "$PIPELINE_PATH" && -z "$UNET_PATH" ]]; then
+  RUN_CMD+=" --pipeline_path $PIPELINE_PATH"
+elif [[ -n "$UNET_PATH" ]]; then
+  RUN_CMD+=" --unet_path $UNET_PATH"
+else
   echo "❌ You must specify either PIPELINE_PATH or UNET_PATH."
   exit 1
 fi
 
-echo "🚀 Running probe suite with command:"
-echo "$CMD"
+# --- Run probes ---
+echo "🚀 Running probe suite:"
+echo "$RUN_CMD"
 echo
+eval $RUN_CMD
 
-eval $CMD
+# ================================================================
+# 📊 Run evaluation right after
+# ================================================================
+echo
+echo "🧮 Starting evaluation of all results..."
+EVAL_CMD="python evaluator.py"
+echo "$EVAL_CMD"
+echo
+eval $EVAL_CMD
+
+echo "✅ All done!"
