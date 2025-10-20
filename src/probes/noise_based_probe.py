@@ -32,7 +32,12 @@ class NoiseBasedProbe(BaseProbe):
                     image = self.pipe(
                         prompt, generator=generator, eta=eta, variance_scale=vscale
                     ).images[0]
-                    score = self.score(image, prompt)
+                    if self.concept == "english_springer_spaniel":
+                        score_prompt = "a picture of a dog"
+                    else:
+                        score_prompt = prompt
+                    score = self.score(image, score_prompt)
+
                     # Save all variants to the debug subfolder (using BaseProbe.save_image)
                     if debug:
                         debug_filename = (
@@ -43,7 +48,6 @@ class NoiseBasedProbe(BaseProbe):
                     # Track best-scoring image
                     if score > best_score:
                         best_score, best_image = score, image
-                        print(best_score, best_image)
 
             # Save only best image to the main probe output folder
             self.save_image(

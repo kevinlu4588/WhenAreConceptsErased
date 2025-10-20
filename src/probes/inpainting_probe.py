@@ -16,11 +16,12 @@ class InpaintingProbe(BaseProbe):
 
         # ---- Load inpainting pipeline ----
         print("🔹 Loading StableDiffusionInpaintPipeline...")
+        original_unet = self.pipe.unet
         self.pipe = StableDiffusionInpaintPipeline.from_pretrained(
-            self.pipeline_path, torch_dtype=torch.float16
+            "CompVis/stable-diffusion-v1-4", torch_dtype=torch.float16
         ).to(self.device)
         self.pipe.safety_checker = None
-
+        self.pipe.unet = original_unet
         # ---- Load base images ----
         base_images_root = getattr(self.config, "base_images_path", None)
         if base_images_root is None:
