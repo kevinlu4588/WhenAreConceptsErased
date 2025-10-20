@@ -1,9 +1,0 @@
-erasing_type,concept,probe,clip_score
-esdx,airliner,standardpromptprobe,19.99196090698242
-base_model,van_gogh,14inpaintprobe,32.05774917602539
-base_model,van_gogh,inpaintprobe,32.02900619506836
-base_model,van_gogh,standardpromptprobe,32.13111701965332
-esdx,van_gogh,inpaintprobe,28.274194526672364
-esdx,van_gogh,noisebasedprobe,27.605564308166503
-esdx,van_gogh,standardpromptprobe,24.457878494262694
-esdx,van_gogh,textualinversionprobe,27.161497116088867
