@@ -9,3 +9,6 @@
 *.pkl
 *.bin
 *.pyc
+local_imagenet_full/
+local_imagenet_fixed_subsets/
+/share/u/kevin/DiffusionConceptErasure/classifier_guidance/image_test.ipynb

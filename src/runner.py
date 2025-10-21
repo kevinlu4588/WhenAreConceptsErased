@@ -120,7 +120,7 @@ def main():
         parser.error("❌ Please provide only one of --pipeline_path or --unet_path, not both.")
     if not args.pipeline_path and not args.unet_path:
         parser.error("❌ You must provide either --pipeline_path or --unet_path.")
-    print("hello")
+
     config = load_config(args.config)
     run_all(
         probes_to_run=args.probes,

@@ -6,17 +6,17 @@
 # --- User-configurable arguments ---
 CONCEPT="airliner"               
 ERASING_TYPE="esdx"              
-PROBES=("all")       
+PROBES=("noisebasedprobe")       
 NUM_IMAGES=10
 DEVICE="cuda"
 CONFIG="configs/default.yaml"
 
-PIPELINE_PATH="kevinlu4588/esdx_airliner"
+PIPELINE_PATH="kevinlu4588/esd-x-airliner"
 UNET_PATH=""
 
 # --- Build runner command ---
 RUN_CMD="python runner.py \
-  --concepts $CONCEPT \
+  --concept $CONCEPT \
   --erasing_type $ERASING_TYPE \
   --probes ${PROBES[*]} \
   --num_images $NUM_IMAGES \
@@ -43,7 +43,7 @@ eval $RUN_CMD
 # ================================================================
 echo
 echo "🧮 Starting evaluation of all results..."
-EVAL_CMD="python evaluator.py"
+# EVAL_CMD="python evaluator.py"
 echo "$EVAL_CMD"
 echo
 eval $EVAL_CMD

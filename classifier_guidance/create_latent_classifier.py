@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-import os
-import math
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import os, math, argparse
+import numpy as np
+import torch, torch.nn as nn, torch.nn.functional as F
 from tqdm import tqdm
 from torchvision import transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from diffusers import AutoencoderKL, DDIMScheduler
 from datasets import load_from_disk
+from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve
 from PIL import Image
-import argparse
+import PIL.PngImagePlugin
+PIL.PngImagePlugin.MAX_TEXT_CHUNK = 10 * 1024 * 1024  # Fix PNG issue
+
 
 # ============================================================
-# 1️⃣  Define Model: Timestep Embedder + Classifier
-# ============================================================
-# ============================================================
-# 🧩 Frozen DDIM-consistent timestep encoding
+# 1️⃣  Model
 # ============================================================
 class FixedTimestepEncoding(nn.Module):
     def __init__(self, scheduler):
@@ -25,11 +23,7 @@ class FixedTimestepEncoding(nn.Module):
 
     def forward(self, t):
         alpha_bar = self.alphas_cumprod[t]
-        signal_scale = alpha_bar.sqrt()
-        noise_scale = (1 - alpha_bar).sqrt()
-        # shape: (batch, 2)
-        return torch.stack([signal_scale, noise_scale], dim=-1)
-
+        return torch.stack([alpha_bar.sqrt(), (1 - alpha_bar).sqrt()], dim=-1)
 
 
 class LatentClassifierT(nn.Module):
@@ -37,12 +31,8 @@ class LatentClassifierT(nn.Module):
         super().__init__()
         c, h, w = latent_shape
         flat_dim = c * h * w
-
-        # --- Frozen encoding ---
         self.t_embed = FixedTimestepEncoding(scheduler)
-        self.fc_t = nn.Linear(2, 1024)  # project (signal, noise) → 1024
-
-        # --- Latent + fusion layers ---
+        self.fc_t = nn.Linear(2, 1024)
         self.fc_x = nn.Linear(flat_dim, 1024)
         self.net = nn.Sequential(
             nn.SiLU(),
@@ -55,142 +45,251 @@ class LatentClassifierT(nn.Module):
 
     def forward(self, z, t):
         z_flat = z.flatten(start_dim=1)
-        x_proj = self.fc_x(z_flat)
-        t_proj = self.fc_t(self.t_embed(t))
-        return self.net(x_proj + t_proj)
-
+        return self.net(self.fc_x(z_flat) + self.fc_t(self.t_embed(t)))
 
 
 class BinDataset(torch.utils.data.Dataset):
-    def __init__(self, hf_ds, transform):
-        self.ds = hf_ds
-        self.transform = transform
+    def __init__(self, ds, transform):
+        self.ds, self.transform = ds, transform
+
+    def __getitem__(self, i):
+        try:
+            img = self.ds[i]["image"]
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img = self.transform(img)
+            label = torch.tensor(self.ds[i]["label_bin"], dtype=torch.float32)
+        except Exception as e:
+            print(f"[WARN] Error loading idx {i}: {e}")
+            img = Image.new("RGB", (512, 512), "black")
+            img = self.transform(img)
+            label = torch.tensor(0.0)
+        return img, label
 
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, i):
-        img = self.ds[i]["image"]
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-        img = self.transform(img)
-        return img, torch.tensor(self.ds[i]["label_bin"], dtype=torch.float32)
+
+# ============================================================
+# 2️⃣  Utility — Precompute and cache VAE latents
+# ============================================================
+def precompute_latents(vae, dataloader, device, cache_path):
+    if os.path.exists(cache_path):
+        print(f"⚡ Using cached latents at {cache_path}")
+        return torch.load(cache_path)
+
+    print(f"💾 Precomputing and caching latents to {cache_path}")
+    all_latents, all_labels = [], []
+    for imgs, labels in tqdm(dataloader, desc="Encoding latents"):
+        imgs = imgs.to(device)
+        with torch.no_grad():
+            latents = vae.encode(imgs).latent_dist.sample() * 0.18215
+        all_latents.append(latents.cpu())
+        all_labels.append(labels)
+    all_latents = torch.cat(all_latents)
+    all_labels = torch.cat(all_labels)
+    torch.save({"latents": all_latents, "labels": all_labels}, cache_path)
+    print(f"✅ Saved latents ({len(all_latents)} samples)")
+    return {"latents": all_latents, "labels": all_labels}
 
 
 # ============================================================
-# 2️⃣  Training Loop
+# 3️⃣  Utility — Power-law timestep sampling
 # ============================================================
-def train_classifier(concept, base_dir=".", num_epochs=10, batch_size=8, lr=1e-4, k_timesteps=7):
+def sample_timesteps(num_train_timesteps, batch_size, device, power=3.0):
+    """Sample timesteps biased toward higher (noisier) values."""
+    u = torch.rand(batch_size, device=device)
+    t = (u ** (1.0 / power)) * (num_train_timesteps - 1)
+    return t.long().clamp(0, num_train_timesteps - 1)
+
+
+# ============================================================
+# 4️⃣  Training Loop
+# ============================================================
+def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8, lr=1e-4,
+                     k_timesteps=7, timestep_power=3.0):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model_id = "CompVis/stable-diffusion-v1-4"
 
-    subset_path = os.path.join(base_dir, "subsets", concept)
-    save_dir = os.path.join(base_dir, "classifiers", concept)
+    subset_path = os.path.join(subset_dir, concept)
+    if not os.path.exists(subset_path):
+        raise FileNotFoundError(f"Subset not found at {subset_path}")
     os.makedirs(save_dir, exist_ok=True)
 
     print(f"📂 Loading dataset from {subset_path}")
     ds = load_from_disk(subset_path)
     print(f"✅ Loaded {len(ds)} samples")
 
-    # Split dataset
-    ds = ds.shuffle(seed=42)
-    n = len(ds)
-    train_ds = ds.select(range(0, int(0.8 * n)))
-    val_ds = ds.select(range(int(0.8 * n), int(0.9 * n)))
-    test_ds = ds.select(range(int(0.9 * n), n))
-    print(f"📊 Split — Train: {len(train_ds)}, Val: {len(val_ds)}, Test: {len(test_ds)}")
+    pos_count = sum(ds["label_bin"])
+    neg_count = len(ds) - pos_count
+    print(f"📊 Class distribution - Pos: {pos_count}, Neg: {neg_count}")
+    pos_weight = torch.tensor(neg_count / pos_count, dtype=torch.float32, device=device)
+    print(f"⚖️ Using pos_weight={pos_weight.item():.2f} in BCE")
 
-    # Data transforms
+    ds = ds.shuffle(seed=42)
+    n_train = int(0.9 * len(ds))
+    train_ds, val_ds = ds.select(range(n_train)), ds.select(range(n_train, len(ds)))
+
     transform = transforms.Compose([
         transforms.Resize((512, 512)),
         transforms.ToTensor(),
-        transforms.Normalize([0.5] * 3, [0.5] * 3),
+        transforms.Normalize([0.5]*3, [0.5]*3)
     ])
+    train_dl_raw = DataLoader(BinDataset(train_ds, transform), batch_size=batch_size,
+                              shuffle=False, num_workers=4)
+    val_dl_raw = DataLoader(BinDataset(val_ds, transform), batch_size=batch_size,
+                            shuffle=False, num_workers=2)
 
-    train_dl = DataLoader(BinDataset(train_ds, transform), batch_size=batch_size, shuffle=True, num_workers=4)
-    val_dl = DataLoader(BinDataset(val_ds, transform), batch_size=batch_size, shuffle=False, num_workers=2)
-
-    # Load VAE + scheduler
+    print(f"🔧 Loading VAE + scheduler...")
     vae = AutoencoderKL.from_pretrained(model_id, subfolder="vae").to(device).eval()
     scheduler = DDIMScheduler.from_pretrained(model_id, subfolder="scheduler")
-
-    # Init classifier
     classifier = LatentClassifierT(scheduler=scheduler).to(device)
+
+    # ---- Precompute and cache latents ----
+    cache_train = os.path.join(save_dir, f"{concept}_train_latents.pt")
+    cache_val = os.path.join(save_dir, f"{concept}_val_latents.pt")
+    train_data = precompute_latents(vae, train_dl_raw, device, cache_train)
+    val_data = precompute_latents(vae, val_dl_raw, device, cache_val)
+
+    train_dl = DataLoader(TensorDataset(train_data["latents"], train_data["labels"]),
+                          batch_size=batch_size, shuffle=True)
+    val_dl = DataLoader(TensorDataset(val_data["latents"], val_data["labels"]),
+                        batch_size=batch_size, shuffle=False)
+
     optimizer = torch.optim.AdamW(classifier.parameters(), lr=lr, weight_decay=1e-3)
-    loss_fn = nn.BCEWithLogitsLoss()
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
+    best_val_loss, best_pr_auc = float("inf"), 0.0
+    save_path = os.path.join(save_dir, f"{concept}.pt")
+    import matplotlib.pyplot as plt
+    import pandas as pd
+
+    metrics = {"epoch": [], "val_loss": [], "pr_auc": [], "roc_auc": [], "tpr5": [], "guidance_score": []}
 
     # ============================================================
-    # 3️⃣  Training loop
-    # ============================================================
-    for epoch in range(1, num_epochs + 1):
+    for epoch in range(1, num_epochs+1):
         classifier.train()
         total_loss = 0.0
-        for imgs, labels in tqdm(train_dl, desc=f"Epoch {epoch} [train]"):
-            imgs, labels = imgs.to(device), labels.to(device)
-            with torch.no_grad():
-                latents = vae.encode(imgs).latent_dist.sample() * 0.18215
-
-            all_noisy, all_labels, all_t = [], [], []
+        for latents, labels in tqdm(train_dl, desc=f"Epoch {epoch}/{num_epochs} [train]"):
+            latents, labels = latents.to(device), labels.to(device)
+            noisy, lbls, ts = [], [], []
             for _ in range(k_timesteps):
-                ts = torch.randint(0, scheduler.config.num_train_timesteps, (latents.size(0),), device=device)
-                noise = torch.randn_like(latents)
-                noisy = scheduler.add_noise(latents, noise, ts)
-                all_noisy.append(noisy)
-                all_labels.append(labels)
-                all_t.append(ts)
-
-            noisy = torch.cat(all_noisy)
-            labels = torch.cat(all_labels)
-            ts = torch.cat(all_t)
-
+                t = sample_timesteps(scheduler.config.num_train_timesteps,
+                                     latents.size(0), device, power=timestep_power)
+                n = torch.randn_like(latents)
+                noisy.append(scheduler.add_noise(latents, n, t))
+                lbls.append(labels)
+                ts.append(t)
+            noisy, lbls, ts = torch.cat(noisy), torch.cat(lbls), torch.cat(ts)
             logits = classifier(noisy, ts).squeeze(-1)
-            loss = loss_fn(logits, labels)
+            loss = criterion(logits, lbls)
 
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(classifier.parameters(), 1.0)
             optimizer.step()
             total_loss += loss.item()
 
-        avg_train_loss = total_loss / len(train_dl)
+        print(f"🧮 Epoch {epoch} Train Loss: {total_loss/len(train_dl):.4f}")
 
-        # --- Validation ---
+        # ---------------- Validation ----------------
         classifier.eval()
+        all_labels, all_logits = [], []
         val_loss = 0.0
         with torch.no_grad():
-            for imgs, labels in tqdm(val_dl, desc=f"Epoch {epoch} [val]"):
-                imgs, labels = imgs.to(device), labels.to(device)
-                latents = vae.encode(imgs).latent_dist.sample() * 0.18215
-                ts = torch.randint(0, scheduler.config.num_train_timesteps, (latents.size(0),), device=device)
-                noise = torch.randn_like(latents)
-                noisy = scheduler.add_noise(latents, noise, ts)
-                logits = classifier(noisy, ts).squeeze(-1)
-                val_loss += loss_fn(logits, labels).item()
+            for latents, labels in tqdm(val_dl, desc=f"Epoch {epoch}/{num_epochs} [val]"):
+                latents, labels = latents.to(device), labels.to(device)
+                logits_all = []
+                for _ in range(3):
+                    t = sample_timesteps(scheduler.config.num_train_timesteps,
+                                         latents.size(0), device, power=timestep_power)
+                    n = torch.randn_like(latents)
+                    logits_all.append(classifier(scheduler.add_noise(latents, n, t), t).squeeze(-1))
+                logits = torch.stack(logits_all).mean(0)
+                val_loss += criterion(logits, labels).item()
+                all_labels.append(labels.cpu())
+                all_logits.append(logits.cpu())
 
+        all_labels = torch.cat(all_labels).numpy()
+        all_logits = torch.cat(all_logits).numpy()
+        probs = 1 / (1 + np.exp(-all_logits))
         avg_val_loss = val_loss / len(val_dl)
-        print(f"✅ Epoch {epoch}/{num_epochs} — Train: {avg_train_loss:.4f} | Val: {avg_val_loss:.4f}\n")
 
-    # ============================================================
-    # 4️⃣  Save model
-    # ============================================================
-    save_path = os.path.join(save_dir, f"latent_classifier_{concept}.pt")
-    torch.save(classifier.state_dict(), save_path)
-    print(f"💾 Saved classifier to {save_path}")
+        pr_auc = average_precision_score(all_labels, probs)
+        roc_auc = roc_auc_score(all_labels, probs)
+        fpr, tpr, _ = roc_curve(all_labels, probs)
+        tpr5 = tpr[np.abs(fpr - 0.05).argmin()]
 
+        metrics["epoch"].append(epoch)
+        metrics["val_loss"].append(avg_val_loss)
+        metrics["pr_auc"].append(pr_auc)
+        metrics["roc_auc"].append(roc_auc)
+        metrics["tpr5"].append(tpr5)
 
+        print(f"✅ Epoch {epoch}")
+        print(f"   Val Loss={avg_val_loss:.4f} | PR AUC={pr_auc:.3f} | "
+              f"ROC AUC={roc_auc:.3f} | TPR@5%FPR={tpr5:.3f}")
+
+                # ---------------- Save model (classifier-guidance priority) ----------------
+    
+        if best_val_loss > val_loss:
+            best_val_loss = val_loss
+            torch.save({
+                "epoch": epoch,
+                "model_state_dict": classifier.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "val_loss": avg_val_loss,
+                "pr_auc": pr_auc,
+                "roc_auc": roc_auc,
+                "tpr5": tpr5,
+            }, save_path)
+            print(f"💾 Saved best model  val_loss={val_loss}, "
+                  f"PR AUC={pr_auc:.3f}, TPR@5%FPR={tpr5:.3f}) → {save_path}")
+
+        print()
+
+    print("="*60)
+    print(f"🏁 Training finished for {concept}")
+    print(f"Best Val Loss={best_val_loss:.4f}, Best PR AUC={best_pr_auc:.3f}")
+    print(f"Model saved at: {save_path}")
+    print("="*60)
+
+    df = pd.DataFrame(metrics)
+    csv_path = os.path.join(save_dir, f"{concept}_metrics.csv")
+    df.to_csv(csv_path, index=False)
+    print(f"📈 Saved metrics to {csv_path}")
+
+    plt.figure(figsize=(10,6))
+    plt.plot(df["epoch"], df["val_loss"], label="Val Loss", color="red")
+    plt.plot(df["epoch"], df["pr_auc"], label="PR AUC", color="blue")
+    plt.plot(df["epoch"], df["roc_auc"], label="ROC AUC", color="green")
+    plt.plot(df["epoch"], df["tpr5"], label="TPR@5%FPR", color="purple")
+    plt.plot(df["epoch"], df["guidance_score"], label="Guidance Score", color="orange", linestyle="--")
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Metric value")
+    plt.title(f"Validation Metrics — {concept}")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plot_path = os.path.join(save_dir, f"{concept}_metrics.png")
+    plt.savefig(plot_path, dpi=200)
+    plt.close()
+    print(f"📊 Metrics plot saved to {plot_path}")
 # ============================================================
-# 5️⃣  CLI Entry
+# CLI
 # ============================================================
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train latent classifier for concept erasure.")
-    parser.add_argument("concept", type=str, help="Concept name (e.g., 'airliner', 'church', etc.)")
-    parser.add_argument("--base_dir", type=str, default=".", help="Base directory containing subsets/ and classifiers/")
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=8)
-    args = parser.parse_args()
-
-    train_classifier(
-        concept=args.concept,
-        base_dir=args.base_dir,
-        num_epochs=args.epochs,
-        batch_size=args.batch_size,
-    )
+    p = argparse.ArgumentParser(description="Train latent classifier with cached VAE latents and biased timestep sampling.")
+    p.add_argument("concept", type=str)
+    p.add_argument("--subset_dir", required=True)
+    p.add_argument("--save_dir", required=True)
+    p.add_argument("--epochs", type=int, default=10)
+    p.add_argument("--batch_size", type=int, default=8)
+    p.add_argument("--lr", type=float, default=1e-4)
+    p.add_argument("--timestep_power", type=float, default=3.0,
+                   help="Power-law bias for timestep sampling (1=uniform, >1 favors noisy latents).")
+    args = p.parse_args()
+    train_classifier(args.concept, args.subset_dir, args.save_dir,
+                     args.epochs, args.batch_size, args.lr, timestep_power=args.timestep_power)
