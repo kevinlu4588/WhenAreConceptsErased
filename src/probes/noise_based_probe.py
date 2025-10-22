@@ -11,8 +11,11 @@ from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from classifier_guidance.create_latent_classifier import LatentClassifierT
 from PIL import Image
-
+from .utils import rank_with_resnet_in_memory
 class NoiseBasedProbe(BaseProbe):
+
+        # ------------------------------------------------------------------
+
     def guided_generation_latent(self, pipe, prompt, classifier, target_class_prob=1.0, num_inference_steps=50, guidance_scale=7.5, classifier_scale=10.0, seed=42, t_downsample=64, eta = 1.0, variance_scale = None):
         """
         Using classifier guidance during the inference pipeline
@@ -103,8 +106,9 @@ class NoiseBasedProbe(BaseProbe):
 
             classifier = None
             classifier_path = os.path.join(classifier_dir, f"{self.concept}.pt")
+            variants = []
+
             if use_cls_guidance:
-                self.output_dir = Path(self.output_dir).parent / "classifier_guidance"
                 classifier = LatentClassifierT(scheduler=self.pipe.scheduler).to(self.device)
                 checkpoint = torch.load(classifier_path, map_location=self.device, weights_only=False)
                 classifier.load_state_dict(checkpoint["model_state_dict"])
@@ -112,7 +116,7 @@ class NoiseBasedProbe(BaseProbe):
                 # =======================================================
                 # Classifier-guided mode: sweep over classifier_scales × etas
                 # =======================================================
-                classifier_scales = self.config.get("classifier_scales", [50, 100, 150, 175])
+                classifier_scales = self.config.get("classifier_scales", [30, 50,75, 125])
                 etas = self.config.get("eta_values", [1.0, 1.17, 1.34, 1.51, 1.68, 1.85])
 
                 for cls_scale in classifier_scales:
@@ -129,17 +133,17 @@ class NoiseBasedProbe(BaseProbe):
                             seed=int(seed),
                             eta=eta,
                         )
-
-                        score_prompt = "a picture of a dog" if self.concept == "english_springer_spaniel" else prompt
-                        score = self.score(image, score_prompt)
+                        variants.append(image)
+                        # score_prompt = "a picture of a dog" if self.concept == "english_springer_spaniel" else prompt
+                        # score = self.score(image, score_prompt)
 
                         if debug:
                             subfolder = f"debug/cls{cls_scale}"
                             fname = f"{self.concept}_{i:03d}_eta{eta:.2f}_cls{cls_scale}_seed{seed}.png"
                             self.save_image(image, fname, subfolder=subfolder)
 
-                        if score > best_score:
-                            best_score, best_image = score, image
+                        # if score > best_score:
+                        #     best_score, best_image = score, image
 
             else:
                 # =======================================================
@@ -147,7 +151,7 @@ class NoiseBasedProbe(BaseProbe):
                 # =======================================================
                 etas = self.config.get("eta_values", [1.0, 1.17, 1.34, 1.51, 1.68, 1.85])
                 variance_scales = self.config.get("variance_scales", [1.0, 1.02, 1.03, 1.04])
-
+                variants = []
                 for eta in etas:
                     for vscale in variance_scales:
                         image = self.pipe(
@@ -158,19 +162,21 @@ class NoiseBasedProbe(BaseProbe):
                             num_inference_steps=50,
                             guidance_scale=7.5,
                         ).images[0]
+                        variants.append(image)
 
-                        score_prompt = "a picture of a dog" if self.concept == "english_springer_spaniel" else prompt
-                        score = self.score(image, score_prompt)
+                        # score_prompt = "a picture of a dog" if self.concept == "english_springer_spaniel" else prompt
+                        # score = self.score(image, score_prompt)
 
                         if debug:
-                            subfolder = f"debug/eta{eta:.2f}_vs{vscale:.2f}"
+                            subfolder = f"debug/image_{i}"
                             fname = f"{self.concept}_{i:03d}_eta{eta:.2f}_vs{vscale:.2f}_seed{seed}.png"
                             self.save_image(image, fname, subfolder=subfolder)
 
-                        if score > best_score:
-                            best_score, best_image = score, image
+                        # if score > best_score:
+                        #     best_score, best_image = score, image
 
             # --- save best-scoring image ---
+            best_image, best_prob = rank_with_resnet_in_memory(variants, concept=self.concept)
             self.save_image(best_image, f"{self.concept}_{i:03d}_seed{seed}_best.png")
 
 

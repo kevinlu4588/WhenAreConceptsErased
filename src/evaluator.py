@@ -40,21 +40,23 @@ class Evaluator:
         return outputs.logits_per_image.item()
 
     # ================================================================
-    # 🧠 Classifier scoring (Top-5)
+    # 🧠 Classifier scoring (Top-1 and Top-5)
     # ================================================================
-    def classifier_top5(self, image, concept, topk=5):
-        """Return 1 if concept is in the Top-5 predicted classes."""
+    def classifier_topk(self, image, concept, topk=5):
+        """Return tuple (top1_hit, top5_hit)"""
         if any(k in concept for k in self.style_concepts):
-            return None  # skip non-object concepts
+            return None, None  # skip style-based concepts
 
         x = self.resnet_preproc(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
             preds = self.resnet(x).softmax(dim=1)
             top_probs, top_indices = torch.topk(preds, topk, dim=1)
 
-        top_labels = [self.resnet_weights.meta["categories"][i].lower() for i in top_indices[0].cpu().numpy()]
+        labels = [self.resnet_weights.meta["categories"][i].lower() for i in top_indices[0].cpu().numpy()]
         concept_clean = concept.replace("_", " ").lower()
-        return int(any(concept_clean in label for label in top_labels))
+        top1_hit = int(concept_clean in labels[0])  # exact Top-1
+        top5_hit = int(any(concept_clean in label for label in labels))
+        return top1_hit, top5_hit
 
     # ================================================================
     # 🚀 Evaluation loop
@@ -93,13 +95,14 @@ class Evaluator:
 
                         try:
                             clip = self.clip_score(image, prompt)
-                            top5 = self.classifier_top5(image, concept)
+                            top1, top5 = self.classifier_topk(image, concept)
                             all_rows.append({
                                 "erasing_type": erasing_type,
                                 "concept": concept,
                                 "probe": probe_name,
                                 "filename": fname,
                                 "clip_score": clip,
+                                "classifier_top1": top1,
                                 "classifier_top5": top5,
                             })
                         except Exception as e:
@@ -115,9 +118,13 @@ class Evaluator:
                 df.groupby(["erasing_type", "concept", "probe"], as_index=False)
                 .agg({
                     "clip_score": "mean",
+                    "classifier_top1": lambda x: x.dropna().mean() * 100,
                     "classifier_top5": lambda x: x.dropna().mean() * 100,
                 })
-                .rename(columns={"classifier_top5": "classifier_top5_acc"})
+                .rename(columns={
+                    "classifier_top1": "classifier_top1_acc",
+                    "classifier_top5": "classifier_top5_acc",
+                })
                 .sort_values(["concept", "erasing_type", "probe"])
             )
             avg_csv = os.path.join(self.output_dir, "evaluation_averaged.csv")
@@ -146,5 +153,5 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    evaluator = Evaluator("results")
+    evaluator = Evaluator("classifier_results")
     evaluator.evaluate()
