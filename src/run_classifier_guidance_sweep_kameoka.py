@@ -5,20 +5,20 @@ import torch
 import yaml
 from probes.standard_prompt_probe import StandardPromptProbe
 from probes.noise_based_probe import NoiseBasedProbe
-
+from probes.diffusion_completion_probe import DiffusionCompletionProbe
 
 # ============================================================
 # 🔧 Configuration
 # ============================================================
 BASE_MODEL_DIR = "/share/u/kevin/ErasingDiffusionModels/final_models"
 CLASSIFIER_DIR = "/share/u/kevin/DiffusionConceptErasure/classifier_guidance/latent_classifiers"
-RESULTS_DIR = "classifier_results"
+RESULTS_DIR = "diff_comp"
 CONFIG_PATH = "configs/default.yaml"
 
-CONCEPTS = ["airliner", "garbage_truck", "golf_ball"]
-MODELS = ["esdx", "esdu", "uce", "stereo", "ga", "rece"]
+CONCEPTS = ["church"]
+MODELS = ["esdx"]
 # MODELS = ["stereo", "ga", "rece"]
-NUM_IMAGES = 30
+NUM_IMAGES = 1
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -66,70 +66,70 @@ def run_probes_for_concept_and_model(concept: str, model: str):
     # ------------------------------------------------------------
     # 1️⃣ Standard Prompt Probe
     # ------------------------------------------------------------
-    out_dir = f"{RESULTS_DIR}/{model}/{concept}/standardpromptprobe"
-    ensure_dir(out_dir)
-    print(f"➡️ StandardPromptProbe: {concept} ({model})")
-    std_probe = StandardPromptProbe(
-        pipeline_path=pipeline_path,
-        erasing_type=model,
-        concept=concept,
-        num_images=NUM_IMAGES,
-        device=DEVICE,
-        config=config,
-    )
-    std_probe.output_dir = out_dir
-    try:
-        std_probe.run(num_images=NUM_IMAGES)
-    except Exception as e:
-        print(f"❌ StandardPromptProbe failed for {concept}-{model}: {e}")
+    # out_dir = f"{RESULTS_DIR}/{model}/{concept}/standardpromptprobe"
+    # ensure_dir(out_dir)
+    # print(f"➡️ StandardPromptProbe: {concept} ({model})")
+    # std_probe = StandardPromptProbe(
+    #     pipeline_path=pipeline_path,
+    #     erasing_type=model,
+    #     concept=concept,
+    #     num_images=NUM_IMAGES,
+    #     device=DEVICE,
+    #     config=config,
+    # )
+    # std_probe.output_dir = out_dir
+    # try:
+    #     std_probe.run(num_images=NUM_IMAGES)
+    # except Exception as e:
+    #     print(f"❌ StandardPromptProbe failed for {concept}-{model}: {e}")
     
-    # ------------------------------------------------------------
-    # 4️⃣ Standard Prompt Probe (with classifier guidance)
-    # ------------------------------------------------------------
-    out_dir = f"{RESULTS_DIR}/{model}/{concept}/standardpromptprobe_cls"
-    ensure_dir(out_dir)
-    print(f"➡️ StandardPromptProbe (with classifier): {concept} ({model})")
-    std_cls_probe = StandardPromptProbe(
-        pipeline_path=pipeline_path,
-        erasing_type=model,
-        concept=concept,
-        num_images=NUM_IMAGES,
-        device=DEVICE,
-        config=config,
-    )
-    std_cls_probe.output_dir = out_dir
-    try:
-        std_cls_probe.run(num_images=NUM_IMAGES, debug=False, use_classifier_guidance=True)
-    except Exception as e:
-        print(f"❌ StandardPromptProbe (cls) failed for {concept}-{model}: {e}")
+    # # ------------------------------------------------------------
+    # # 4️⃣ Standard Prompt Probe (with classifier guidance)
+    # # ------------------------------------------------------------
+    # out_dir = f"{RESULTS_DIR}/{model}/{concept}/standardpromptprobe_cls"
+    # ensure_dir(out_dir)
+    # print(f"➡️ StandardPromptProbe (with classifier): {concept} ({model})")
+    # std_cls_probe = StandardPromptProbe(
+    #     pipeline_path=pipeline_path,
+    #     erasing_type=model,
+    #     concept=concept,
+    #     num_images=NUM_IMAGES,
+    #     device=DEVICE,
+    #     config=config,
+    # )
+    # std_cls_probe.output_dir = out_dir
+    # try:
+    #     std_cls_probe.run(num_images=NUM_IMAGES, debug=True, use_classifier_guidance=True)
+    # except Exception as e:
+    #     print(f"❌ StandardPromptProbe (cls) failed for {concept}-{model}: {e}")
 
-    # # ------------------------------------------------------------
-    # # 2️⃣ Noise-Based Probe (no classifier guidance)
-    # # ------------------------------------------------------------
-    out_dir = f"{RESULTS_DIR}/{model}/{concept}/noisebasedprobe_nocls"
-    ensure_dir(out_dir)
-    print(f"➡️ NoiseBasedProbe (no classifier): {concept} ({model})")
-    nb_probe = NoiseBasedProbe(
-        pipeline_path=pipeline_path,
-        erasing_type=model,
-        concept=concept,
-        num_images=NUM_IMAGES,
-        device=DEVICE,
-        config=config,
-    )
-    nb_probe.output_dir = out_dir
-    try:
-        nb_probe.run(num_images=NUM_IMAGES, debug=False, use_cls_guidance=False)
-    except Exception as e:
-        print(f"❌ NoiseBasedProbe (no cls) failed for {concept}-{model}: {e}")
+    # # # ------------------------------------------------------------
+    # # # 2️⃣ Noise-Based Probe (no classifier guidance)
+    # # # ------------------------------------------------------------
+    # out_dir = f"{RESULTS_DIR}/{model}/{concept}/noisebasedprobe_nocls"
+    # ensure_dir(out_dir)
+    # print(f"➡️ NoiseBasedProbe (no classifier): {concept} ({model})")
+    # nb_probe = NoiseBasedProbe(
+    #     pipeline_path=pipeline_path,
+    #     erasing_type=model,
+    #     concept=concept,
+    #     num_images=NUM_IMAGES,
+    #     device=DEVICE,
+    #     config=config,
+    # )
+    # nb_probe.output_dir = out_dir
+    # try:
+    #     nb_probe.run(num_images=NUM_IMAGES, debug=True, use_cls_guidance=False)
+    # except Exception as e:
+    #     print(f"❌ NoiseBasedProbe (no cls) failed for {concept}-{model}: {e}")
 
     # ------------------------------------------------------------
     # 3️⃣ Noise-Based Probe (with classifier guidance)
     # ------------------------------------------------------------
-    out_dir = f"{RESULTS_DIR}/{model}/{concept}/noisebasedprobe_cls"
+    out_dir = f"{RESULTS_DIR}/{model}/{concept}/diffusion_completion"
     ensure_dir(out_dir)
     print(f"➡️ NoiseBasedProbe (with classifier): {concept} ({model})")
-    nb_cls_probe = NoiseBasedProbe(
+    diff_comp = DiffusionCompletionProbe(
         pipeline_path=pipeline_path,
         erasing_type=model,
         concept=concept,
@@ -137,8 +137,8 @@ def run_probes_for_concept_and_model(concept: str, model: str):
         device=DEVICE,
         config=config,
     )
-    nb_cls_probe.output_dir = out_dir
-    nb_cls_probe.run(num_images=NUM_IMAGES, debug=False, use_cls_guidance=True)
+    diff_comp.output_dir = out_dir
+    diff_comp.run(num_images=NUM_IMAGES, debug=True)
 
 
 # ============================================================

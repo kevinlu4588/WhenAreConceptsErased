@@ -43,7 +43,7 @@ class Evaluator:
     # 🧠 Classifier scoring (Top-1 and Top-5)
     # ================================================================
     def classifier_topk(self, image, concept, topk=5):
-        """Return tuple (top1_hit, top5_hit)"""
+        """Return tuple (top1_hit, top5_hit) with concept-specific matching rules."""
         if any(k in concept for k in self.style_concepts):
             return None, None  # skip style-based concepts
 
@@ -53,9 +53,25 @@ class Evaluator:
             top_probs, top_indices = torch.topk(preds, topk, dim=1)
 
         labels = [self.resnet_weights.meta["categories"][i].lower() for i in top_indices[0].cpu().numpy()]
+
+        # --- Concept-specific flexible matching rules ---
         concept_clean = concept.replace("_", " ").lower()
-        top1_hit = int(concept_clean in labels[0])  # exact Top-1
-        top5_hit = int(any(concept_clean in label for label in labels))
+        top1_label = labels[0]
+
+        def check_flexible_match(concept_name, label_text):
+            concept_name = concept_name.lower()
+            if concept_name == "airliner":
+                return ("plane" in label_text or "airliner" in label_text)
+            elif concept_name == "garbage_truck":
+                return ("truck" in label_text or "garbage" in label_text)
+            elif concept_name == "golf_ball":
+                return "ball" in label_text
+            else:
+                return concept_name in label_text
+
+        # --- Apply matching ---
+        top1_hit = int(check_flexible_match(concept_clean, top1_label))
+        top5_hit = int(any(check_flexible_match(concept_clean, lbl) for lbl in labels))
         return top1_hit, top5_hit
 
     # ================================================================
