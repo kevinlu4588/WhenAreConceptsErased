@@ -6,6 +6,7 @@ import yaml
 from probes.standard_prompt_probe import StandardPromptProbe
 from probes.noise_based_probe import NoiseBasedProbe
 from probes.diffusion_completion_probe import DiffusionCompletionProbe
+from probes.interference_probe import InterferenceProbe
 
 # ============================================================
 # 🔧 Configuration
@@ -66,22 +67,22 @@ def run_probes_for_concept_and_model(concept: str, model: str):
     # ------------------------------------------------------------
     # 1️⃣ Standard Prompt Probe
     # ------------------------------------------------------------
-    # out_dir = f"{RESULTS_DIR}/{model}/{concept}/standardpromptprobe"
-    # ensure_dir(out_dir)
-    # print(f"➡️ StandardPromptProbe: {concept} ({model})")
-    # std_probe = StandardPromptProbe(
-    #     pipeline_path=pipeline_path,
-    #     erasing_type=model,
-    #     concept=concept,
-    #     num_images=NUM_IMAGES,
-    #     device=DEVICE,
-    #     config=config,
-    # )
-    # std_probe.output_dir = out_dir
-    # try:
-    #     std_probe.run(num_images=NUM_IMAGES)
-    # except Exception as e:
-    #     print(f"❌ StandardPromptProbe failed for {concept}-{model}: {e}")
+    out_dir = f"{RESULTS_DIR}/{model}/{concept}/standardpromptprobe"
+    ensure_dir(out_dir)
+    print(f"➡️ StandardPromptProbe: {concept} ({model})")
+    std_probe = StandardPromptProbe(
+        pipeline_path=pipeline_path,
+        erasing_type=model,
+        concept=concept,
+        num_images=NUM_IMAGES,
+        device=DEVICE,
+        config=config,
+    )
+    std_probe.output_dir = out_dir
+    try:
+        std_probe.run(num_images=NUM_IMAGES)
+    except Exception as e:
+        print(f"❌ StandardPromptProbe failed for {concept}-{model}: {e}")
     
     # # ------------------------------------------------------------
     # # 4️⃣ Standard Prompt Probe (with classifier guidance)
@@ -126,10 +127,10 @@ def run_probes_for_concept_and_model(concept: str, model: str):
     # ------------------------------------------------------------
     # 3️⃣ Noise-Based Probe (with classifier guidance)
     # ------------------------------------------------------------
-    out_dir = f"{RESULTS_DIR}/{model}/{concept}/diffusion_completion"
+    out_dir = f"{RESULTS_DIR}/{model}/{concept}/interference"
     ensure_dir(out_dir)
     print(f"➡️ NoiseBasedProbe (with classifier): {concept} ({model})")
-    diff_comp = DiffusionCompletionProbe(
+    diff_comp = InterferenceProbe(
         pipeline_path=pipeline_path,
         erasing_type=model,
         concept=concept,

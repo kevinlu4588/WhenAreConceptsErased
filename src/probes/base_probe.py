@@ -27,7 +27,7 @@ from torchvision.models import resnet50, ResNet50_Weights
 
 class BaseProbe:
     def __init__(self, pipeline_path=None, unet_path=None, erasing_type=None, concept=None,
-                 num_images=10, device="cuda", config=None, probe_name=None):
+                 num_images=10, device="cuda", config=None, probe_name=None, num_inference_steps=50):
         self.pipeline_path = pipeline_path
         self.unet_path = unet_path
         self.erasing_type = erasing_type
@@ -37,6 +37,7 @@ class BaseProbe:
         self.config = config
         self.probe_name = probe_name or self.__class__.__name__.lower()
         self.prompt_csv = f"/share/u/kevin/DiffusionConceptErasure/final_data/prompts/{concept}.csv"
+        self.num_inference_steps=num_inference_steps
 
         # ============================================================
         # 🚀 Load base pipeline

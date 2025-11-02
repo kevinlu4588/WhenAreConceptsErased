@@ -8,10 +8,8 @@ from probes.base_probe import BaseProbe
 from .utils import call_sdv14
 
 warnings.filterwarnings("ignore", message=".*IProgress not found.*")
-StableDiffusionPipeline.__call__ = call_sdv14
-StableDiffusionPipeline._callback_tensor_inputs = [
-    "dt_latents", "latents", "prompt_embeds", "negative_prompt_embeds"
-]
+
+
 
 
 # ============================================================
@@ -32,7 +30,10 @@ def decode_latent(pipe, latent, device):
 def generate_base_latents(pipe, prompt, interrupt_steps, seed, num_inference_steps, device):
     """Run the base pipeline until interruption and collect latents + dt images."""
     interrupted_latents, dt_images = [], []
-
+    pipe.__call__ = call_sdv14
+    pipe._callback_tensor_inputs = [
+        "dt_latents", "latents", "prompt_embeds", "negative_prompt_embeds"
+    ]
     for t_step in interrupt_steps:
         gen = torch.Generator(device=device).manual_seed(seed)
 
@@ -40,6 +41,7 @@ def generate_base_latents(pipe, prompt, interrupt_steps, seed, num_inference_ste
             if i == t_step:
                 pipeline._interrupt = True
                 interrupted_latents.append(callback_kwargs["latents"].clone())
+                dt_images.append(callback_kwargs['dt_latents'].clone())
             return callback_kwargs
 
         pipe.scheduler.set_timesteps(num_inference_steps)
@@ -81,19 +83,16 @@ class DiffusionCompletionProbe(BaseProbe):
         Run diffusion completion for a set of prompts and save images.
         """
         device = self.device
-        interrupt_steps = interrupt_steps or [5, 10]
+        interrupt_steps = interrupt_steps or [0, 1, 2]
         prompts = self._load_prompts(num_images)
-
         print(f"🚀 Running DiffusionCompletionProbe for concept='{self.concept}'")
-
         # === Load base pipeline ===
         base_pipe = StableDiffusionPipeline.from_pretrained(
             "CompVis/stable-diffusion-v1-4",
-            torch_dtype=torch.bfloat16
-        ).to(device).to(torch.bfloat16)
+            torch_dtype=torch.float16
+        ).to(device).to(torch.float16)
         base_pipe.scheduler = DDIMScheduler.from_config(base_pipe.scheduler.config)
         base_pipe.set_progress_bar_config(disable=True)
-
         # === Iterate over prompts ===
         for i, (prompt, seed) in tqdm(
             enumerate(prompts),
@@ -108,20 +107,15 @@ class DiffusionCompletionProbe(BaseProbe):
                 self.num_inference_steps, device
             )
 
-            if debug:
-                for idx, dt_img in enumerate(dt_images):
-                    fname = f"{self.concept}_{i:03d}_base_t{interrupt_steps[idx]}_seed{seed}.png"
-                    self.save_image(dt_img, fname, subfolder="base_dt")
-
             # ------------------------------------------------------------
             # Step 2: Base reconstructions (only if debug)
             # ------------------------------------------------------------
             base_pipe.scheduler.set_timesteps(self.num_inference_steps)
             timesteps = base_pipe.scheduler.timesteps
-
+            model_dtype = next(self.pipe.unet.parameters()).dtype
             if debug:
                 for idx, t_step in enumerate(interrupt_steps):
-                    latent = base_latents[idx]
+                    latent = base_latents[idx].to(dtype=model_dtype, device=device)
                     run_timesteps = timesteps[t_step + 1:]
 
                     base_recon = base_pipe(

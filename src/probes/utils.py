@@ -315,7 +315,7 @@ def call_sdv14(
 
     callback = kwargs.pop("callback", None)
     callback_steps = kwargs.pop("callback_steps", None)
-
+    print('using sd14')
     if callback is not None:
         deprecate(
             "callback",
@@ -331,6 +331,7 @@ def call_sdv14(
 
     if isinstance(callback_on_step_end, (PipelineCallback, MultiPipelineCallbacks)):
         callback_on_step_end_tensor_inputs = callback_on_step_end.tensor_inputs
+        print("in sd14", callback_on_step_end_tensor_inputs)
 
     # 0. Default height and width to unet
     height = height or self.unet.config.sample_size * self.vae_scale_factor
