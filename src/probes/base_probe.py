@@ -24,6 +24,7 @@ from diffusers import StableDiffusionPipeline, UNet2DConditionModel
 import torch, os
 from transformers import CLIPModel, CLIPProcessor
 from torchvision.models import resnet50, ResNet50_Weights
+from pathlib import Path
 
 class BaseProbe:
     def __init__(self, pipeline_path=None, unet_path=None, erasing_type=None, concept=None,
@@ -36,7 +37,9 @@ class BaseProbe:
         self.device = device
         self.config = config
         self.probe_name = probe_name or self.__class__.__name__.lower()
-        self.prompt_csv = f"/share/u/kevin/DiffusionConceptErasure/final_data/prompts/{concept}.csv"
+        self.root_dir = Path(__file__).resolve().parents[2]   # 2 levels up from /src/probes/base_probe.py
+        self.root_data_dir = self.root_dir / "data"
+        self.prompt_csv = self.root_data_dir  / "prompts"/ f"{concept}.csv"
         self.num_inference_steps=num_inference_steps
 
         # ============================================================

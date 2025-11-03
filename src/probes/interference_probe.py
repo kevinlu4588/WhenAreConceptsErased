@@ -20,7 +20,7 @@ class InterferenceProbe(BaseProbe):
         Each other concept contributes up to `num_images` images.
         """
         device = self.device
-        prompt_dir = "/share/u/kevin/DiffusionConceptErasure/final_data/prompts"
+        prompt_dir = self.root_data_dir / "prompts"
         all_csvs = [
             os.path.join(prompt_dir, f)
             for f in os.listdir(prompt_dir)

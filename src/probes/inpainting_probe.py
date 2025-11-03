@@ -25,7 +25,7 @@ class InpaintingProbe(BaseProbe):
         # ---- Load base images ----
         base_images_root = getattr(self.config, "base_images_path", None)
         if base_images_root is None:
-            base_images_root = "/share/u/kevin/DiffusionConceptErasure/new_probe_code/results/base_model"
+            base_images_root = self.root_data_dir / "results" / "base_model"
 
         base_images_path = os.path.join(base_images_root, self.concept, "standardpromptprobe")
         if not os.path.exists(base_images_path):

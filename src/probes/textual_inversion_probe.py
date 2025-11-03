@@ -23,9 +23,10 @@ class TextualInversionProbe(BaseProbe):
         initializer_token = getattr(self.config, "initializer_token", "object")
 
         # ---- Paths ----
+        
         script_path = (
-            "/share/u/kevin/DiffusionConceptErasure/new_probe_code/noisy_diffuser_scheduling/"
-            "examples/textual_inversion/a_textual_inversion.py"
+            self.root_dir / "src" / "noisy_diffuser_scheduling/"
+            "examples/textual_inversion/textual_inversion.py"
         )
         erased_model_path = self.pipeline_path  # ✅ pipeline_path = erased model path
 

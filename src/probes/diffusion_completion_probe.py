@@ -9,9 +9,6 @@ from .utils import call_sdv14
 
 warnings.filterwarnings("ignore", message=".*IProgress not found.*")
 
-
-
-
 # ============================================================
 # 🔧 Diffusion Completion Helper Functions
 # ============================================================
@@ -41,7 +38,6 @@ def generate_base_latents(pipe, prompt, interrupt_steps, seed, num_inference_ste
             if i == t_step:
                 pipeline._interrupt = True
                 interrupted_latents.append(callback_kwargs["latents"].clone())
-                dt_images.append(callback_kwargs['dt_latents'].clone())
             return callback_kwargs
 
         pipe.scheduler.set_timesteps(num_inference_steps)

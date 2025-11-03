@@ -26,12 +26,11 @@ class Evaluator:
         self.resnet.eval()
         self.resnet_preproc = self.resnet_weights.transforms()
 
-        # ---- Defaults ----
         self.default_mask_size = (256, 256)
         self.style_concepts = ["van_gogh", "picasso", "andy_warhol", "monet", "vangogh"]
 
     # ================================================================
-    # 🧮 CLIP scoring
+    # 🧮 Scoring methods
     # ================================================================
     def clip_score(self, image, prompt):
         inputs = self.clip_proc(text=[prompt], images=image, return_tensors="pt", padding=True).to(self.device)
@@ -39,13 +38,10 @@ class Evaluator:
             outputs = self.clip_model(**inputs)
         return outputs.logits_per_image.item()
 
-    # ================================================================
-    # 🧠 Classifier scoring (Top-1 and Top-5)
-    # ================================================================
     def classifier_topk(self, image, concept, topk=5):
         """Return tuple (top1_hit, top5_hit) with concept-specific matching rules."""
         if any(k in concept for k in self.style_concepts):
-            return None, None  # skip style-based concepts
+            return None, None
 
         x = self.resnet_preproc(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -53,76 +49,42 @@ class Evaluator:
             top_probs, top_indices = torch.topk(preds, topk, dim=1)
 
         labels = [self.resnet_weights.meta["categories"][i].lower() for i in top_indices[0].cpu().numpy()]
-
-        # --- Concept-specific flexible matching rules ---
         concept_clean = concept.replace("_", " ").lower()
-        top1_label = labels[0]
 
-        def check_flexible_match(concept_name, label_text):
-            concept_name = concept_name.lower()
+        def match(concept_name, label):
             if concept_name == "airliner":
-                return ("plane" in label_text or "airliner" in label_text)
+                return "plane" in label or "airliner" in label
             elif concept_name == "garbage_truck":
-                return ("truck" in label_text or "garbage" in label_text)
+                return "truck" in label or "garbage" in label
             elif concept_name == "golf_ball":
-                return "ball" in label_text
-            else:
-                return concept_name in label_text
+                return "ball" in label
+            return concept_name in label
 
-        # --- Apply matching ---
-        top1_hit = int(check_flexible_match(concept_clean, top1_label))
-        top5_hit = int(any(check_flexible_match(concept_clean, lbl) for lbl in labels))
+        top1_hit = int(match(concept_clean, labels[0]))
+        top5_hit = int(any(match(concept_clean, lbl) for lbl in labels))
         return top1_hit, top5_hit
 
     # ================================================================
-    # 🚀 Evaluation loop
+    # 🚀 Evaluation entry point
     # ================================================================
     def evaluate(self, erasing_types=None, concepts=None, probes=None):
-        erasing_types = erasing_types or self._list_dirs(self.results_root)
         all_rows = []
+        erasing_types = erasing_types or self._list_dirs(self.results_root)
 
         for erasing_type in erasing_types:
-            et_path = os.path.join(self.results_root, erasing_type)
-            if not os.path.isdir(et_path):
-                continue
-
-            for concept in (concepts or self._list_dirs(et_path)):
-                concept_path = os.path.join(et_path, concept)
-                if not os.path.isdir(concept_path):
-                    continue
-
+            for concept in (concepts or self._list_dirs(os.path.join(self.results_root, erasing_type))):
+                concept_path = os.path.join(self.results_root, erasing_type, concept)
                 for probe_name in (probes or self._list_dirs(concept_path)):
                     probe_path = os.path.join(concept_path, probe_name)
                     if not os.path.isdir(probe_path):
                         continue
 
                     print(f"📂 Evaluating {erasing_type}/{concept}/{probe_name}")
-                    prompt = self._concept_to_prompt(concept)
-
-                    for fname in tqdm(sorted(os.listdir(probe_path))):
-                        if not fname.lower().endswith((".png", ".jpg", ".jpeg")):
-                            continue
-                        fpath = os.path.join(probe_path, fname)
-                        image = Image.open(fpath).convert("RGB")
-
-                        # Crop for inpainting probes
-                        if "inpaint" in probe_name.lower():
-                            image = self._crop_to_mask(image)
-
-                        try:
-                            clip = self.clip_score(image, prompt)
-                            top1, top5 = self.classifier_topk(image, concept)
-                            all_rows.append({
-                                "erasing_type": erasing_type,
-                                "concept": concept,
-                                "probe": probe_name,
-                                "filename": fname,
-                                "clip_score": clip,
-                                "classifier_top1": top1,
-                                "classifier_top5": top5,
-                            })
-                        except Exception as e:
-                            print(f"⚠️ Failed on {fpath}: {e}")
+                    if self._is_interference_probe(probe_name):
+                        rows = self._evaluate_interference_probe(erasing_type, concept, probe_name, probe_path)
+                    else:
+                        rows = self._evaluate_normal_probe(erasing_type, concept, probe_name, probe_path)
+                    all_rows.extend(rows)
 
         df = pd.DataFrame(all_rows)
         raw_csv = os.path.join(self.output_dir, "evaluation_raw.csv")
@@ -130,8 +92,76 @@ class Evaluator:
         print(f"✅ Raw results saved to {raw_csv}")
 
         if not df.empty:
-            df_avg = (
-                df.groupby(["erasing_type", "concept", "probe"], as_index=False)
+            self._aggregate_results(df)
+
+    # ================================================================
+    # 🧩 Probe-level evaluators
+    # ================================================================
+    def _evaluate_normal_probe(self, erasing_type, concept, probe_name, probe_path):
+        prompt = self._concept_to_prompt(concept)
+        rows = []
+
+        for fname in tqdm(sorted(os.listdir(probe_path)), desc=f"{concept}/{probe_name}"):
+            if not fname.lower().endswith((".png", ".jpg", ".jpeg")):
+                continue
+            image = Image.open(os.path.join(probe_path, fname)).convert("RGB")
+            if "inpaint" in probe_name.lower():
+                image = self._crop_to_mask(image)
+            try:
+                clip = self.clip_score(image, prompt)
+                top1, top5 = self.classifier_topk(image, concept)
+                rows.append({
+                    "erasing_type": erasing_type,
+                    "concept": concept,
+                    "probe": probe_name,
+                    "filename": fname,
+                    "clip_score": clip,
+                    "classifier_top1": top1,
+                    "classifier_top5": top5,
+                })
+            except Exception as e:
+                print(f"⚠️ Failed on {fname}: {e}")
+        return rows
+
+    def _evaluate_interference_probe(self, erasing_type, erased_concept, probe_name, probe_path):
+        rows = []
+        for target_concept in self._list_dirs(probe_path):
+            target_path = os.path.join(probe_path, target_concept)
+            print(f"  ↳ Interference target: {target_concept}")
+
+            for fname in tqdm(sorted(os.listdir(target_path)), desc=f"Interf {erased_concept}→{target_concept}"):
+                if not fname.lower().endswith((".png", ".jpg", ".jpeg")):
+                    continue
+                image = Image.open(os.path.join(target_path, fname)).convert("RGB")
+                try:
+                    prompt = self._concept_to_prompt(target_concept)
+                    clip = self.clip_score(image, prompt)
+                    top1, top5 = self.classifier_topk(image, target_concept)
+                    rows.append({
+                        "erasing_type": erasing_type,
+                        "erased_concept": erased_concept,
+                        "target_concept": target_concept,
+                        "probe": probe_name,
+                        "filename": fname,
+                        "clip_score": clip,
+                        "classifier_top1": top1,
+                        "classifier_top5": top5,
+                    })
+                except Exception as e:
+                    print(f"⚠️ Failed on {fname}: {e}")
+        return rows
+
+    # ================================================================
+    # 📊 Aggregation
+    # ================================================================
+    def _aggregate_results(self, df):
+        interference_df = df[df["probe"].str.contains("interference", case=False, na=False)]
+        normal_df = df[~df["probe"].str.contains("interference", case=False, na=False)]
+        results = []
+
+        def _aggregate(df, group_cols):
+            return (
+                df.groupby(group_cols, as_index=False)
                 .agg({
                     "clip_score": "mean",
                     "classifier_top1": lambda x: x.dropna().mean() * 100,
@@ -141,8 +171,15 @@ class Evaluator:
                     "classifier_top1": "classifier_top1_acc",
                     "classifier_top5": "classifier_top5_acc",
                 })
-                .sort_values(["concept", "erasing_type", "probe"])
             )
+
+        if not normal_df.empty:
+            results.append(_aggregate(normal_df, ["erasing_type", "concept", "probe"]))
+        if not interference_df.empty:
+            results.append(_aggregate(interference_df, ["erasing_type", "erased_concept", "target_concept", "probe"]))
+
+        if results:
+            df_avg = pd.concat(results, ignore_index=True)
             avg_csv = os.path.join(self.output_dir, "evaluation_averaged.csv")
             df_avg.to_csv(avg_csv, index=False)
             print(f"✅ Averaged results saved to {avg_csv}")
@@ -164,8 +201,10 @@ class Evaluator:
         words = concept.replace("_", " ")
         if any(k in words.lower() for k in self.style_concepts):
             return f"a painting in the style of {words}"
-        else:
-            return f"a photo of a {words}"
+        return f"a photo of a {words}"
+
+    def _is_interference_probe(self, probe_name):
+        return "interference" in probe_name.lower()
 
 
 if __name__ == "__main__":

@@ -1,17 +1,10 @@
 # When Are Concepts Erased From Diffusion Models?
 
-This repository provides the official implementation of **"When Are Concepts Erased From Diffusion Models?"** (https://arxiv.org/abs/2505.17013) accepted at NeurIPS 2025.
+[**Paper on arXiv**](https://arxiv.org/abs/2505.17013)
 
-## The paper
+This repository provides the official implementation of **"When Are Concepts Erased From Diffusion Models?"** accepted at NeurIPS 2025.
 
-Most evaluation methods for concept erasure involve optimizing adversarial prompts. What if we explored a framework focused on other types of inputs? We explore evaluations in the form of:
-1. Overloading Gaussian noise in the scheduler
-2. Context injection via inpainting or starting the diffusion process from an intermediate step
-3. Classifier guidance
-
-And compare the model behavior against traditional probes (standard prompt, textual inversion, unlearndiffatk)
-
----
+![Figure 1](images/Figure1.png)
 
 ## Environment Setup
 
@@ -22,69 +15,50 @@ conda env create -f erasing_env.yaml
 conda activate erasing_env
 ```
 
-## ⚡ Quick Start Example
+## Running the Demo
 
-Run a full probe and evaluation in one command:
+Navigate to the `src` directory and run the demo script:
 
 ```bash
-./run_single_model.sh
+cd src
+python demo.py
 ```
 
 This will:
-1. Load an SD1.4 model with "airliner" erased via esd-x
-2. Run all available probes
-3. Save generated images under `results/`
-4. Automatically compute CLIP and classifier-based evaluation metrics
+1. Run all available probes on the configured model(s)
+2. Save generated images under `data/results/`
+3. Automatically compute evaluation metrics (CLIP similarity and classification accuracy)
 
-## 💻 Using Your Own Models (Direct Python Usage)
+## Available Probes
 
-You can run `runner.py` directly instead of the shell script.
+The demo runs the following probes to test concept erasure:
 
-### If your model directory contains a complete pipeline (e.g., UNet, VAE, text encoder):
+- **StandardPromptProbe**: Basic prompt-based image generation
+- **NoiseBasedProbe**: Tests model robustness to trajectory perturbations
+  - Runs with and without classifier guidance
+- **DiffusionCompletionProbe**: Tests diffusion completion from partial images
+- **InterferenceProbe**: Tests interference between concepts
+- **InpaintingProbe**: Evaluates concept regeneration in masked regions
+- **TextualInversionProbe**: Assesses embedding-level concept understanding
 
-```bash
-python runner.py \
-  --concept airliner \
-  --erasing_type esdx \
-  --probes noisebasedprobe \
-  --num_images 10 \
-  --device cuda \
-  --config configs/default.yaml \
-  --pipeline_path kevinlu4588/airliner
-```
+## Running Probes on Your Model
 
-### Or a path to a custom UNET checkpoint:
+To run the probes on your own model:
 
 ```bash
-python runner.py \
-  --concept airliner \
-  --erasing_type esdx \
-  --probes noisebasedprobe \
-  --num_images 10 \
-  --device cuda \
-  --config configs/default.yaml \
-  --unet_path /path/to/your/custom_unet
+cd src
+python runner.py --concept <your_concept> --pipeline_path <path_to_your_model>
 ```
 
-## 📊 Running Evaluator
-
+For example:
 ```bash
-python evaluator.py
+python runner.py --concept airliner --pipeline_path kevinlu4588/esd-x-airliner
 ```
-The evaluation framework computes:
-- CLIP Similarity: Measures semantic similarity between generated images and target concepts
-- Classification Accuracy: Uses pre-trained classifiers to detect presence of erased concepts
----
 
-## 🧪 Available Probes
-
-Our framework includes multiple probing techniques to test concept erasure:
-
-- **Noise-based Probe**: Tests model robustness to trajectory perturbations
-- **Inpainting Probe**: Evaluates concept regeneration in masked regions
-- **Textual Inversion Probe**: Assesses embedding-level concept understanding
-- **Diffusion Compeletion**
-- **Classifier Guidance**
+This will run all probes by default. You can also specify individual probes:
+```bash
+python runner.py --concept airliner --pipeline_path <model_path> --probes standardpromptprobe noisebasedprobe
+```
 
 ## 📖 Citation
 
@@ -103,17 +77,17 @@ If you find this work useful in your research, please consider citing:
 
 ## 🔗 Related Work
 
-This research builds upon several concept erasure methods. If you use our evaluation framework with these methods, please also cite the original papers:
+Our work builds upon a growing body of research on concept erasure and targeted model editing, including  
 
-### ESD (Erased Stable Diffusion)
-```bibtex
-@inproceedings{gandikota2023erasing,
-  title={Erasing Concepts from Diffusion Models},
-  author={Rohit Gandikota and Joanna Materzy\'nska and Jaden Fiotto-Kaufman and David Bau},
-  booktitle={Proceedings of the 2023 IEEE International Conference on Computer Vision},
-  year={2023}
-}
-```
+- **[Erased Stable Diffusion (ESD)](https://arxiv.org/abs/2303.07326)** — direct weight-space editing for concept removal  
+- **[Universal Concept Editing (UCE)](https://arxiv.org/abs/2307.00756)** — concept-agnostic editing via optimization in latent space  
+- **[TaskVectors](https://arxiv.org/abs/2302.00658)** — linear task steering in model weight space  
+- **[STEREO](https://arxiv.org/abs/2402.04362)** — structure-preserving concept erasure through orthogonalization  
+- **[RECE](https://arxiv.org/abs/2403.13862)** — robust erasure via contrastive editing  
+- **[UnlearnDiffAtk](https://arxiv.org/abs/2403.08598)** — adversarial training for unlearning in diffusion models  
+
+We thank the authors of these methods for laying the groundwork for this research.
+
 
 ---
 
@@ -121,9 +95,6 @@ This research builds upon several concept erasure methods. If you use our evalua
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Acknowledgments
-
-We thank the authors of the original concept erasure methods for making their code publicly available. This work was supported by [acknowledgment details].
 
 ## 📧 Contact
 
