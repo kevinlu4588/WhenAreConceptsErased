@@ -14,3 +14,5 @@ local_imagenet_fixed_subsets/
 /share/u/kevin/DiffusionConceptErasure/classifier_guidance/image_test.ipynb
 *.log
 *.csv
+
+!images/Figure1.png

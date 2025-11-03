@@ -79,12 +79,12 @@ If you find this work useful in your research, please consider citing:
 
 Our work builds upon a growing body of research on concept erasure and targeted model editing, including  
 
-- **[Erased Stable Diffusion (ESD)](https://arxiv.org/abs/2303.07326)** — direct weight-space editing for concept removal  
-- **[Universal Concept Editing (UCE)](https://arxiv.org/abs/2307.00756)** — concept-agnostic editing via optimization in latent space  
+- **[Erased Stable Diffusion (ESD)](https://arxiv.org/abs/2303.07326)** — model finetuning for concept removal  
+- **[Universal Concept Editing (UCE)](https://arxiv.org/abs/2307.00756)** — lightweight cross attention projection
 - **[TaskVectors](https://arxiv.org/abs/2302.00658)** — linear task steering in model weight space  
-- **[STEREO](https://arxiv.org/abs/2402.04362)** — structure-preserving concept erasure through orthogonalization  
-- **[RECE](https://arxiv.org/abs/2403.13862)** — robust erasure via contrastive editing  
-- **[UnlearnDiffAtk](https://arxiv.org/abs/2403.08598)** — adversarial training for unlearning in diffusion models  
+- **[STEREO](https://arxiv.org/abs/2402.04362)** — ESD + Textual Inversion loop
+- **[RECE](https://arxiv.org/abs/2403.13862)** — UCE + additional embedding projection  
+- **[UnlearnDiffAtk](https://arxiv.org/abs/2403.08598)** — adversarial prompt optimization
 
 We thank the authors of these methods for laying the groundwork for this research.
 
