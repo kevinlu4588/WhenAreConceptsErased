@@ -6,6 +6,26 @@ This repository provides the official implementation of **"When Are Concepts Era
 
 ![Figure 1](images/Figure1.png)
 
+## Overview
+
+In concept erasure, a model is modified to selectively prevent it from generating a target concept. Despite the rapid development of new methods, it remains unclear how thoroughly these approaches remove the target concept from the model.
+
+We begin by proposing **two conceptual models for the erasure mechanism in diffusion models**: (i) interfering with the model's internal guidance processes, and (ii) reducing the unconditional likelihood of generating the target concept, potentially removing it entirely.
+
+To assess whether a concept has been truly erased from the model, we introduce **a comprehensive suite of independent probing techniques**: supplying visual context, modifying the diffusion trajectory, applying classifier guidance, and analyzing the model's alternative generations that emerge in place of the erased concept. Our results shed light on the value of exploring concept erasure robustness outside of adversarial text inputs, and emphasize the importance of comprehensive evaluations for erasure in diffusion models.
+
+## Available Probes
+
+The demo runs the following probes to test concept erasure:
+
+- **StandardPromptProbe**: Basic prompt-based image generation
+- **NoiseBasedProbe**: Tests model robustness to trajectory perturbations
+  - Runs with and without classifier guidance
+- **DiffusionCompletionProbe**: Tests diffusion completion from partial images
+- **InterferenceProbe**: Tests interference between concepts
+- **InpaintingProbe**: Evaluates concept regeneration in masked regions
+- **TextualInversionProbe**: Assesses embedding-level concept understanding
+
 ## Environment Setup
 
 Create and activate the provided Conda environment:
@@ -29,17 +49,6 @@ This will:
 2. Save generated images under `data/results/`
 3. Automatically compute evaluation metrics (CLIP similarity and classification accuracy)
 
-## Available Probes
-
-The demo runs the following probes to test concept erasure:
-
-- **StandardPromptProbe**: Basic prompt-based image generation
-- **NoiseBasedProbe**: Tests model robustness to trajectory perturbations
-  - Runs with and without classifier guidance
-- **DiffusionCompletionProbe**: Tests diffusion completion from partial images
-- **InterferenceProbe**: Tests interference between concepts
-- **InpaintingProbe**: Evaluates concept regeneration in masked regions
-- **TextualInversionProbe**: Assesses embedding-level concept understanding
 
 ## Running Probes on Your Model
 
