@@ -1,8 +1,6 @@
-# When Are Concepts Erased From Diffusion Models?
+# When Are Concepts Erased From Diffusion Models? (NeurIPS 2025)
 
 [**Project website**](http://concepts.baulab.info/) | [**Paper on arXiv**](https://arxiv.org/abs/2505.17013) | [**Finetuned model and classifier weights**](https://huggingface.co/DiffusionConceptErasure)
-
-This repository provides the official implementation of **"When Are Concepts Erased From Diffusion Models?"** accepted at NeurIPS 2025.
 
 ![Figure 1](images/Figure1.png)
 
