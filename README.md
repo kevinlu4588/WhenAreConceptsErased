@@ -1,6 +1,6 @@
 # When Are Concepts Erased From Diffusion Models?
 
-[**Paper on arXiv**](https://arxiv.org/abs/2505.17013)
+[**Project website**](http://concepts.baulab.info/) | [**Paper on arXiv**](https://arxiv.org/abs/2505.17013) | [**Finetuned model and classifier weights**](https://huggingface.co/DiffusionConceptErasure)
 
 This repository provides the official implementation of **"When Are Concepts Erased From Diffusion Models?"** accepted at NeurIPS 2025.
 
@@ -14,25 +14,14 @@ We begin by proposing **two conceptual models for the erasure mechanism in diffu
 
 To assess whether a concept has been truly erased from the model, we introduce **a comprehensive suite of independent probing techniques**: supplying visual context, modifying the diffusion trajectory, applying classifier guidance, and analyzing the model's alternative generations that emerge in place of the erased concept. Our results shed light on the value of exploring concept erasure robustness outside of adversarial text inputs, and emphasize the importance of comprehensive evaluations for erasure in diffusion models.
 
-## Available Probes
-
-The demo runs the following probes to test concept erasure:
-
-- **StandardPromptProbe**: Basic prompt-based image generation
-- **NoiseBasedProbe**: Tests model robustness to trajectory perturbations
-  - Runs with and without classifier guidance
-- **DiffusionCompletionProbe**: Tests diffusion completion from partial images
-- **InterferenceProbe**: Tests interference between concepts
-- **InpaintingProbe**: Evaluates concept regeneration in masked regions
-- **TextualInversionProbe**: Assesses embedding-level concept understanding
-
 ## Environment Setup
 
 Create and activate the provided Conda environment:
 
 ```bash
-conda env create -f erasing_env.yaml
-conda activate erasing_env
+git clone https://github.com/kevinlu4588/WhenAreConceptsErased.git
+cd cd WhenAreConceptsErased
+pip install -r requirements.txt
 ```
 
 ## Running the Demo
