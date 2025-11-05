@@ -12,12 +12,12 @@ ORG = "DiffusionConceptErasure"
 
 PIPELINES = [
     {
-        "repo_name": "stereo_church",
-        "local_path": "/share/u/kevin/ErasingDiffusionModels/final_models/stereo_church",
+        "repo_name": "stereo_garbage_truck",
+        "local_path": "/share/u/kevin/ErasingDiffusionModels/final_models/stereo_garbage_truck",
     },
     {
-        "repo_name": "rece_church",
-        "local_path": "/share/u/kevin/ErasingDiffusionModels/final_models/rece_church",
+        "repo_name": "rece_garbage_truck",
+        "local_path": "/share/u/kevin/ErasingDiffusionModels/final_models/rece_garbage_truck",
     },
 ]
 

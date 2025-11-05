@@ -10,6 +10,7 @@ from datasets import load_from_disk
 from sklearn.metrics import average_precision_score, roc_auc_score, roc_curve
 from PIL import Image
 import PIL.PngImagePlugin
+from PIL import Image
 PIL.PngImagePlugin.MAX_TEXT_CHUNK = 10 * 1024 * 1024  # Fix PNG issue
 
 
