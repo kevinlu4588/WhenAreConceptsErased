@@ -29,11 +29,10 @@ from evaluator import Evaluator
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT_DIR / "data" / "results"
 
-BASE_MODEL_DIR = "kevinlu4588"
-CLASSIFIER_DIR = ROOT_DIR / "classifier_guidance" / "latent_classifiers"
+BASE_MODEL_DIR = "DiffusionConceptErasure"
 CONFIG_PATH = "configs/default.yaml"
-CONCEPTS = ["airliner"]
-MODELS = ["esd-x"]
+CONCEPTS = ["airliner", "church"]
+MODELS = ["esdx", "uce", "stereo", "rece"]
 NUM_IMAGES = 1
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -81,7 +80,7 @@ def ensure_base_model_images(concept: str, num_images: int):
 
 def make_pipeline_path(model: str, concept: str):
     """Resolve model path like .../final_models/esdx_golf_ball"""
-    return os.path.join(BASE_MODEL_DIR, f"{model}-{concept}")
+    return os.path.join(BASE_MODEL_DIR, f"{model}_{concept}")
 
 def load_config(config_path="configs/default.yaml"):
     default_config = {
@@ -112,7 +111,7 @@ def run_all_probes_for_concept_and_model(concept: str, model: str):
     # Load config
     config = load_config(CONFIG_PATH)
     config["score_type"] = "clip"
-    config["classifier_root"] = CLASSIFIER_DIR
+    config["classifier_root"] = BASE_MODEL_DIR
 
     # Define all probes to run
     probes_to_run = [
@@ -123,16 +122,22 @@ def run_all_probes_for_concept_and_model(concept: str, model: str):
             "kwargs": {}
         },
         {
+            "name": "StandardPromptProbe",
+            "class": StandardPromptProbe,
+            "output_dir": f"{RESULTS_DIR}/{model}/{concept}/classifier_guidance",
+            "kwargs": {"debug": True, "use_classifier_guidance": True}
+        },
+        {
             "name": "NoiseBasedProbe", 
             "class": NoiseBasedProbe,
             "output_dir": f"{RESULTS_DIR}/{model}/{concept}/noisebasedprobe",
-            "kwargs": {"debug": True, "use_cls_guidance": False}
+            "kwargs": {"debug": True, "use_classifier_guidance": False}
         },
         {
             "name": "NoiseBasedProbe", 
             "class": NoiseBasedProbe,
             "output_dir": f"{RESULTS_DIR}/{model}/{concept}/classifier_guidance_noise_based",
-            "kwargs": {"debug": True, "use_cls_guidance": True}
+            "kwargs": {"debug": True, "use_classifier_guidance": True}
         },
         {
             "name": "DiffusionCompletionProbe",

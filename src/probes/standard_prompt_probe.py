@@ -86,9 +86,9 @@ class StandardPromptProbe(BaseProbe):
         if use_classifier_guidance:
             classifier_dir = self.config.get(
                 "classifier_root",
-                "/share/u/kevin/DiffusionConceptErasure/classifier_guidance/latent_classifiers"
             )
-            classifier_path = os.path.join(classifier_dir, f"{self.concept}.pt")
+            classifier_path = os.path.join(classifier_dir, f"latent-classifier-{self.concept}", f"{self.concept}.pt")
+            print(classifier_path)
             if not os.path.exists(classifier_path):
                 raise FileNotFoundError(f"❌ Classifier not found for '{self.concept}' at {classifier_path}")
             print(f"🔹 Loading classifier for '{self.concept}'...")

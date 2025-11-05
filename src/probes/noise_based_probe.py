@@ -79,7 +79,7 @@ class NoiseBasedProbe(BaseProbe):
 
 
 
-    def run(self, num_images=None, debug=False, use_cls_guidance=False):
+    def run(self, num_images=None, debug=False, use_classifier_guidance=False):
         """
         Generate noisy variants and keep the best-scoring image per prompt.
 
