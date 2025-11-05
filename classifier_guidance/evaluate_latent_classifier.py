@@ -98,29 +98,49 @@ with torch.no_grad():
         except ValueError:
             auc = np.nan
 
-        # --- true positive recall ---
-        # recall = TP / (TP + FN)
-        tpr = recall_score(labels_np, (preds > 0.5), pos_label=1)
+            # --- true positive recall ---
+            # recall = TP / (TP + FN)
+            tpr = recall_score(labels_np, (preds > 0.5), pos_label=1)
+    
+            acc_list.append(acc)
+            auc_list.append(auc)
+            tpr_list.append(tpr)
+    
+    print(f"\n✅ Evaluation complete! Peak metrics:")
+    print(f"   🎯 Best accuracy: {max(acc_list):.3f}")
+    print(f"   📊 Best AUC: {max(auc_list):.3f}")
+    print(f"   🎨 Best TPR: {max(tpr_list):.3f}")
+    
+    # ============================================================
+    # 6️⃣ Plot and Save
+    # ============================================================
+    plt.figure(figsize=(10, 5))
+    plt.plot(timesteps_to_eval, acc_list, label="Accuracy (All)", linewidth=2)
+    plt.plot(timesteps_to_eval, auc_list, label="AUROC", linewidth=2)
+    plt.plot(timesteps_to_eval, tpr_list, label="True Positive Recall", linestyle="--", linewidth=2, color="orange")
+    plt.xlabel("Timestep")
+    plt.ylabel("Performance")
+    plt.title("Classifier Performance vs Diffusion Timestep")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    save_plot_path = os.path.join(args.save_dir, f"{args.concept}_performance_vs_timestep.png")
+    plt.savefig(save_plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"📈 Saved performance plot to {save_plot_path}")
+    
+    # Save metrics CSV
+    import pandas as pd
+    metrics_path = os.path.join(args.save_dir, f"{args.concept}_metrics.csv")
+    metrics_df = pd.DataFrame({
+        'timestep': timesteps_to_eval,
+        'accuracy': acc_list,
+        'auc': auc_list,
+        'tpr': tpr_list
+    })
+    metrics_df.to_csv(metrics_path, index=False)
+    print(f"📊 Saved metrics to {metrics_path}")
 
-        acc_list.append(acc)
-        auc_list.append(auc)
-        tpr_list.append(tpr)
 
-
-# ============================================================
-# 6️⃣ Plot and Save
-# ============================================================
-plt.figure(figsize=(10, 5))
-plt.plot(timesteps_to_eval, acc_list, label="Accuracy (All)", linewidth=2)
-plt.plot(timesteps_to_eval, auc_list, label="AUROC", linewidth=2)
-plt.plot(timesteps_to_eval, tpr_list, label="True Positive Recall", linestyle="--", linewidth=2, color="orange")
-plt.xlabel("Timestep")
-plt.ylabel("Performance")
-plt.title("Classifier Performance vs Diffusion Timestep")
-plt.legend()
-plt.grid(True, alpha=0.3)
-
-save_plot_path = "./classifier_tpr_vs_timestep.png"
-plt.savefig(save_plot_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"📈 Saved TPR performance plot to {save_plot_path}")
+if __name__ == "__main__":
+    main()

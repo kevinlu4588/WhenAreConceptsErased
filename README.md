@@ -69,6 +69,18 @@ This will run all probes by default. You can also specify individual probes:
 python runner.py --concept airliner --pipeline_path <model_path> --probes standardpromptprobe noisebasedprobe
 ```
 
+## Training new latent classifiers
+
+**Quick start**:
+
+  ```bash
+  cd classifier_guidance
+  
+  python e2e_concept_classifier.py "church, church building" "airliner"\
+    --epochs 70 --batch-size 8 --output-dir "./my_classifiers"
+  ```
+
+
 ## 📖 Citation
 
 If you find this work useful in your research, please consider citing:

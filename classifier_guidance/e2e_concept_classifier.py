@@ -16,6 +16,7 @@ import json
 from time import time
 from pathlib import Path
 import shutil
+import glob
 
 import PIL.PngImagePlugin
 PIL.PngImagePlugin.MAX_TEXT_CHUNK = 10 * 1024 * 1024  # 10MB
@@ -28,9 +29,12 @@ def parse_args():
     parser.add_argument('concepts', nargs='+', help='List of concepts to train classifiers for')
     
     # Data arguments
-    parser.add_argument('--imagenet-dir', type=str, default='/share/u/kevin/DiffusionConceptErasure/local_imagenet_full',
+    base_dir = os.environ.get('DCE_BASE_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    parser.add_argument('--imagenet-dir', type=str, 
+                        default=os.path.join(base_dir, 'local_imagenet_full'),
                         help='Path to ImageNet dataset (will download if not exists)')
-    parser.add_argument('--subset-dir', type=str, default='/share/u/kevin/DiffusionConceptErasure/local_imagenet_fixed_subsets',
+    parser.add_argument('--subset-dir', type=str, 
+                        default=os.path.join(base_dir, 'local_imagenet_fixed_subsets'),
                         help='Directory to store created subsets')
     parser.add_argument('--output-dir', type=str, default='./concept_classifiers',
                         help='Directory to save trained classifiers')
@@ -45,7 +49,7 @@ def parse_args():
     
     # Script paths
     parser.add_argument('--base-dir', type=str, 
-                        default='/share/u/kevin/DiffusionConceptErasure/classifier_guidance',
+                        default=os.path.dirname(os.path.abspath(__file__)),
                         help='Base directory containing training scripts')
     
     # Options
@@ -55,6 +59,8 @@ def parse_args():
                         help='Force recreation of existing subsets')
     parser.add_argument('--force-retrain', action='store_true',
                         help='Force retraining of existing classifiers')
+    parser.add_argument('--skip-evaluation', action='store_true',
+                        help='Skip classifier evaluation step')
     
     return parser.parse_args()
 
@@ -64,39 +70,53 @@ def check_imagenet_exists(imagenet_dir):
     if not os.path.exists(imagenet_dir):
         return False
     
-    # Check for some expected structure
-    num_files = 0
-    for root, dirs, files in os.walk(imagenet_dir):
-        num_files += len(files)
-        if num_files > 100:  # Basic sanity check
-            return True
-    
-    return num_files > 100
+    # Check for sharded structure created by download script
+    shard_dirs = glob.glob(os.path.join(imagenet_dir, 'imagenet_train_*'))
+    return len(shard_dirs) > 0
 
 
-def download_imagenet(imagenet_dir):
-    """Download ImageNet dataset if it doesn't exist."""
+def download_imagenet(imagenet_dir, base_dir):
+    """Download ImageNet dataset using the download script."""
     print(f"\n{'='*70}")
     print("📥 DOWNLOADING IMAGENET")
     print(f"{'='*70}\n")
     
-    print("⚠️  ImageNet download requires:")
-    print("   - Valid ImageNet account and credentials")
-    print("   - ~150GB of disk space")
-    print("   - Several hours depending on connection speed")
+    print("⚠️  ImageNet download will:")
+    print("   - Download from HuggingFace (no authentication required)")
+    print("   - Require ~150GB of disk space")
+    print("   - Take several hours depending on connection speed")
     
     response = input("\nDo you want to proceed with download? [y/N]: ")
     if response.lower() != 'y':
         print("❌ Download cancelled. Please provide ImageNet data manually.")
         sys.exit(1)
     
-    # Note: Actual ImageNet download implementation would go here
-    # This is a placeholder as ImageNet requires authentication
-    print("\n❌ Automatic ImageNet download not implemented.")
-    print("Please download ImageNet-1K manually from:")
-    print("   https://www.image-net.org/download.php")
-    print(f"And extract to: {imagenet_dir}")
-    sys.exit(1)
+    download_script = os.path.join(base_dir, "download_imagenet_classes.py")
+    if not os.path.exists(download_script):
+        print(f"❌ Download script not found: {download_script}")
+        sys.exit(1)
+    
+    # Set environment variable for the download script
+    env = os.environ.copy()
+    env['DCE_BASE_DIR'] = os.path.dirname(base_dir)
+    
+    cmd = [sys.executable, download_script]
+    print(f"\n🚀 Running: {' '.join(cmd)}")
+    
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+        text=True, env=env
+    )
+    
+    for line in process.stdout:
+        print(line.strip())
+    
+    ret = process.wait()
+    if ret == 0:
+        print("\n✅ ImageNet download completed successfully!")
+    else:
+        print(f"\n❌ Download failed with exit code {ret}")
+        sys.exit(1)
 
 
 def create_subset(concept, imagenet_dir, subset_dir, n_neg, base_dir, force=False):
@@ -185,6 +205,42 @@ def train_classifier(concept, subset_dir, save_dir, epochs, batch_size, lr,
         return False
 
 
+def evaluate_classifier(concept, subset_dir, classifier_path, save_dir, base_dir):
+    """Evaluate a trained classifier across timesteps."""
+    evaluate_script = os.path.join(base_dir, "evaluate_latent_classifier.py")
+    if not os.path.exists(evaluate_script):
+        print(f"   ❌ Evaluate script not found: {evaluate_script}")
+        return False
+    
+    concept_safe = concept.replace(", ", "_").replace(" ", "_")
+    
+    cmd = [
+        sys.executable, evaluate_script,
+        "--classifier_path", classifier_path,
+        "--subset_dir", subset_dir,
+        "--concept", concept_safe,
+        "--save_dir", save_dir,
+    ]
+    
+    start = time()
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+    )
+    
+    for line in process.stdout:
+        print("   " + line.strip())
+    
+    ret = process.wait()
+    elapsed = time() - start
+    
+    if ret == 0:
+        print(f"   ✅ Successfully evaluated classifier in {elapsed:.1f}s")
+        return True
+    else:
+        print(f"   ❌ Failed to evaluate classifier (exit code {ret})")
+        return False
+
+
 def save_final_classifiers(concepts, save_dir, output_dir):
     """Copy classifiers to final output directory with simple names."""
     os.makedirs(output_dir, exist_ok=True)
@@ -235,7 +291,7 @@ def main():
         
         if not check_imagenet_exists(args.imagenet_dir):
             print(f"❌ ImageNet not found at {args.imagenet_dir}")
-            download_imagenet(args.imagenet_dir)
+            download_imagenet(args.imagenet_dir, args.base_dir)
         else:
             print(f"✅ ImageNet found at {args.imagenet_dir}")
     
@@ -272,9 +328,22 @@ def main():
                           args.timestep_power, args.base_dir, args.force_retrain):
             successful_training.append(concept)
     
-    # Step 4: Save final classifiers
+    # Step 4: Evaluate classifiers (optional)
+    if not args.skip_evaluation:
+        print(f"\n{'='*70}")
+        print("📈 PHASE 4: Evaluating classifiers")
+        print(f"{'='*70}\n")
+        
+        for i, concept in enumerate(successful_training, 1):
+            print(f"\n[{i}/{len(successful_training)}] Evaluating classifier for '{concept}'...")
+            concept_safe = concept.replace(", ", "_").replace(" ", "_")
+            classifier_path = os.path.join(temp_save_dir, f"{concept_safe}.pt")
+            evaluate_classifier(concept, args.subset_dir, classifier_path, 
+                              temp_save_dir, args.base_dir)
+    
+    # Step 5: Save final classifiers
     print(f"\n{'='*70}")
-    print("💾 PHASE 4: Saving final classifiers")
+    print("💾 PHASE 5: Saving final classifiers")
     print(f"{'='*70}\n")
     
     saved_files = save_final_classifiers(successful_training, temp_save_dir, args.output_dir)

@@ -5,7 +5,9 @@ from tqdm import tqdm
 
 # ---- Configuration ----
 dataset_name = "imagenet-1k"
-local_dir = "/share/u/kevin/DiffusionConceptErasure/local_imagenet_full"
+# Use environment variable or default to relative path
+base_dir = os.environ.get('DCE_BASE_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+local_dir = os.path.join(base_dir, "local_imagenet_full")
 num_shards = 100   # ~1.28M / 100 ≈ 12.8k samples per shard
 os.makedirs(local_dir, exist_ok=True)
 
