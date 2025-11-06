@@ -33,11 +33,11 @@ class TextualInversionProbe(BaseProbe):
         # ✅ Use base_images_root for training data, just like InpaintProbe
         base_images_root = getattr(self.config, "base_images_path", None)
         if base_images_root is None:
-            base_images_root = "/share/u/kevin/DiffusionConceptErasure/new_probe_code/results/base_model"
+            base_images_root = self.root_data_dir / "results" / "base_model"
 
-        data_dir = os.path.join(base_images_root, concept, "standardpromptprobe")
+        data_dir = os.path.join(base_images_root, self.concept, "standardpromptprobe")
         if not os.path.exists(data_dir):
-            raise FileNotFoundError(f"Training images folder not found: {data_dir}")
+            raise FileNotFoundError(f"Base images folder not found: {data_dir}")
 
         # ✅ Nested output directory: textual_inversion/<erasing_type>/<concept>
         output_dir = os.path.join(self.output_dir, "textual_inversion", erasing_type, concept)

@@ -8,7 +8,13 @@ from dataclasses import dataclass
 # Optional model imports
 from transformers import CLIPModel, CLIPProcessor
 from torchvision.models import resnet50, ResNet50_Weights
-
+import sys
+from pathlib import Path
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent.parent
+sys.path.insert(0, str(project_root))
+from classifier_guidance.create_latent_classifier import LatentClassifierT
+from huggingface_hub import hf_hub_download
 
 @dataclass
 class ProbeArgs:
@@ -186,3 +192,57 @@ class BaseProbe:
             return 0.0  # concept not found in ImageNet
 
         return probs[0, match_idx].item()
+    
+    def _load_classifier(self):
+        """
+        Load classifier from local path first, then fallback to HuggingFace.
+        Uses class attributes: self.pipe, self.concept, self.config, self.device
+        
+        Returns:
+            classifier: Loaded and evaluated LatentClassifierT model
+        """
+        classifier = LatentClassifierT(scheduler=self.pipe.scheduler).to(self.device)
+        
+        # Try local path first - use absolute path based on project root
+        classifier_dir = self.config.get(
+            "classifier_root",
+            str(project_root / "classifier_guidance" / "latent_classifiers"),
+        )
+        classifier_path = os.path.join(classifier_dir, f"{self.concept}.pt")
+        
+        if os.path.exists(classifier_path):
+            try:
+                checkpoint = torch.load(classifier_path, map_location=self.device, weights_only=False)
+                classifier.load_state_dict(checkpoint["model_state_dict"])
+                print(f"✅ Loaded from local: {classifier_path}")
+                classifier.eval()
+                return classifier
+            except Exception as e:
+                print(f"⚠️ Failed to load from local path: {e}")
+        else:
+            print(f"📁 Local classifier not found at {classifier_path}, trying HuggingFace...")
+        
+        # Fallback to HuggingFace
+        hf_sources = [
+            f"DiffusionConceptErasure/latent-classifier-{self.concept}",  # Primary repo
+        ]
+        
+        for hf_model_id in hf_sources:
+            # Try different filename patterns
+            for filename in ["model.pt", f"{self.concept}.pt", "classifier.pt"]:
+                try:
+                    model_file = hf_hub_download(
+                        repo_id=hf_model_id,
+                        filename=filename,
+                        cache_dir=self.config.get("hf_cache_dir", None)
+                    )
+                    checkpoint = torch.load(model_file, map_location=self.device, weights_only=False)
+                    classifier.load_state_dict(checkpoint["model_state_dict"])
+                    print(f"✅ Loaded from HF: {hf_model_id}/{filename}")
+                    classifier.eval()
+                    return classifier
+                except Exception as e:
+                    # Try next filename or next repo
+                    continue
+        
+        raise FileNotFoundError(f"Could not find classifier for {self.concept} locally or on HuggingFace")

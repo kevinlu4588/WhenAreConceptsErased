@@ -30,7 +30,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT_DIR / "data" / "results"
 
 BASE_MODEL_DIR = "DiffusionConceptErasure"
-CONFIG_PATH = "configs/default.yaml"
+CONFIG_PATH = "configs/minimal.yaml"  # Changed to use minimal config
 CONCEPTS = ["airliner", "church"]
 MODELS = ["esdx", "uce", "stereo", "rece"]
 NUM_IMAGES = 1
@@ -62,20 +62,17 @@ def ensure_base_model_images(concept: str, num_images: int):
 
     ensure_dir(base_output_dir)
 
-    try:
-        probe = StandardPromptProbe(
-            pipeline_path=pipeline_path,
-            erasing_type="base_model",
-            concept=concept,
-            num_images=num_images,
-            device=DEVICE,
-            config=config,
-        )
-        probe.output_dir = str(base_output_dir)
-        probe.run(num_images=num_images, debug=True)
-        print(f"✅ Generated {num_images} base images for '{concept}'")
-    except Exception as e:
-        print(f"❌ Failed to generate base images for '{concept}': {e}")
+    probe = StandardPromptProbe(
+        pipeline_path=pipeline_path,
+        erasing_type="base_model",
+        concept=concept,
+        num_images=num_images,
+        device=DEVICE,
+        config=config,
+    )
+    probe.output_dir = str(base_output_dir)
+    probe.run(num_images=num_images, debug=True)
+    print(f"✅ Generated {num_images} base images for '{concept}'")
 
 
 def make_pipeline_path(model: str, concept: str):
@@ -171,25 +168,21 @@ def run_all_probes_for_concept_and_model(concept: str, model: str):
         
         # Create output directory
         ensure_dir(probe_info["output_dir"])
+    
+        # Initialize probe
+        probe = probe_info["class"](
+            pipeline_path=pipeline_path,
+            erasing_type=model,
+            concept=concept,
+            num_images=NUM_IMAGES,
+            device=DEVICE,
+            config=config,
+        )
+        probe.output_dir = probe_info["output_dir"]
         
-        try:
-            # Initialize probe
-            probe = probe_info["class"](
-                pipeline_path=pipeline_path,
-                erasing_type=model,
-                concept=concept,
-                num_images=NUM_IMAGES,
-                device=DEVICE,
-                config=config,
-            )
-            probe.output_dir = probe_info["output_dir"]
-            
-            # Run probe with any additional kwargs
-            probe.run(num_images=NUM_IMAGES, **probe_info["kwargs"])
-            print(f"✅ {probe_info['name']} completed successfully")
-            
-        except Exception as e:
-            print(f"❌ {probe_info['name']} failed for {concept}-{model}: {e}")
+        # Run probe with any additional kwargs
+        probe.run(num_images=NUM_IMAGES, **probe_info["kwargs"])
+        print(f"✅ {probe_info['name']} completed successfully")
 
 # ============================================================
 # 🏁 Main

@@ -7,7 +7,7 @@ from probes.base_probe import BaseProbe
 from .utils import rank_with_resnet_in_memory
 # Make classifier guidance importable
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-from classifier_guidance.create_latent_classifier import LatentClassifierT
+from .utils import load_classifier
 
 
 # ============================================================
@@ -84,19 +84,7 @@ class StandardPromptProbe(BaseProbe):
         classifier = None
 
         if use_classifier_guidance:
-            classifier_dir = self.config.get(
-                "classifier_root",
-            )
-            classifier_path = os.path.join(classifier_dir, f"latent-classifier-{self.concept}", f"{self.concept}.pt")
-            print(classifier_path)
-            if not os.path.exists(classifier_path):
-                raise FileNotFoundError(f"❌ Classifier not found for '{self.concept}' at {classifier_path}")
-            print(f"🔹 Loading classifier for '{self.concept}'...")
-            classifier = LatentClassifierT(scheduler=self.pipe.scheduler).to(self.device)
-            checkpoint = torch.load(classifier_path, map_location=self.device, weights_only=False)
-            classifier.load_state_dict(checkpoint["model_state_dict"])
-            classifier.eval()
-            print(f"✅ Classifier loaded successfully.")
+            classifier = self._load_classifier()
 
         # ============================================================
         # 🚀 Generation loop

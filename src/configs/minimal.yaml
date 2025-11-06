@@ -1,0 +1,29 @@
+# Minimal configuration for demo.py with low values
+# This config uses minimal values for faster testing
+
+# Minimal eta values (just 2 values instead of 6)
+eta_values: [0.0, 0.5]
+
+# Minimal variance scales (just 2 values instead of 4)
+variance_scales: [1.00, 1.01]
+
+# Minimal classifier scales for classifier guidance
+# Using low values to reduce computational intensity
+classifier_scales: [5, 10]
+
+# Score type for evaluation
+score_type: "CLIP"
+
+# Base images path
+base_images_path: "/share/u/kevin/DiffusionConceptErasure/data/results/base_model/"
+
+# Mask size for inpainting probe
+mask_size: [128, 128]
+
+# Initializer token for textual inversion
+initializer_token: "object"
+
+# Additional minimal parameters that may be used by probes
+num_inference_steps: 20  # Reduced from default 50
+guidance_scale: 5.0      # Lower guidance scale
+seed: 42                 # Fixed seed for reproducibility

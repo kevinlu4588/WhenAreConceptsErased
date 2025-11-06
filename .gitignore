@@ -16,3 +16,4 @@ local_imagenet_fixed_subsets/
 *.csv
 archive/
 !images/Figure1.png
+*.pyc
