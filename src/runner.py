@@ -1,51 +1,40 @@
 #!/usr/bin/env python3
+# ================================================================
+# 🚀 Runner for Concept Erasure Probes
+# ================================================================
+# Usage examples:
+#   python runner.py --concept church \
+#       --pipeline_path DiffusionConceptErasure/uce_church \
+#       --erasing_type uce --probes all --num_images 30
+#
+#   python runner.py --concept church --unet_path checkpoints/unet.pt \
+#       --erasing_type stereo --probes standard noise --num_images 10
+# ================================================================
+
 import argparse
-import importlib
-import inspect
 import os
-import sys
 from pathlib import Path
 import torch
 import yaml
-from tqdm import tqdm
 
-from probes.base_probe import BaseProbe
+# Import probes explicitly for readability
+from probes.standard_prompt_probe import StandardPromptProbe
+from probes.noise_based_probe import NoiseBasedProbe
+from probes.diffusion_completion_probe import DiffusionCompletionProbe
+from probes.interference_probe import InterferenceProbe
+from probes.inpainting_probe import InpaintingProbe
+from probes.textual_inversion_probe import TextualInversionProbe
+from evaluator import Evaluator
 
+# ================================================================
+# ⚙️ Utility Functions
+# ================================================================
+ROOT_DIR = Path(__file__).resolve().parents[1]
+RESULTS_DIR = ROOT_DIR / "data" / "demo_results"
 
-# ============================================================
-# 🧠 1️⃣ Utility: Discover all probe subclasses
-# ============================================================
-def discover_probes(probes_dir: str):
-    """Auto-discovers all subclasses of BaseProbe in a folder."""
-    probe_classes = {}
-    
-    # Add the parent directory to sys.path so imports work
-    parent_dir = os.path.dirname(probes_dir)
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
-    
-    for file in Path(probes_dir).glob("*_probe.py"):
-        if file.stem == "base_probe":  # Skip the base class file
-            continue
-            
-        # Use the full module path: probes.module_name
-        module_name = f"probes.{file.stem}"
-        
-        try:
-            module = importlib.import_module(module_name)
-            for name, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, BaseProbe) and obj is not BaseProbe:
-                    probe_classes[name.lower()] = obj
-                    print(f"✅ Discovered probe: {name}")
-        except ImportError as e:
-            print(f"⚠️ Failed to import {module_name}: {e}")
-            
-    return probe_classes
+def ensure_dir(path: str):
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-
-# ============================================================
-# ⚙️ 2️⃣ Utility: Load config YAML or defaults
-# ============================================================
 def load_config(config_path="configs/default.yaml"):
     default_config = {
         "base_images_path": "results/base_model",
@@ -58,32 +47,54 @@ def load_config(config_path="configs/default.yaml"):
         default_config.update(user_cfg)
     return default_config
 
+# ================================================================
+# 🧩 Available Probes
+# ================================================================
+ALL_PROBES = {
+    "standardpromptprobe": StandardPromptProbe,
+    "noisebasedprobe": NoiseBasedProbe,
+    "diffusioncompletionprobe": DiffusionCompletionProbe,
+    "interferenceprobe": InterferenceProbe,
+    "inpaintingprobe": InpaintingProbe,
+    "textualinversionprobe": TextualInversionProbe,
+}
 
-# ============================================================
-# 🚀 3️⃣ Core Runner Logic
-# ============================================================
-def run_all(probes_to_run, concepts, num_images, device, config, erasing_type, pipeline_path=None, unet_path=None):
-    probes_dir = os.path.join(os.path.dirname(__file__), "probes")
-    probe_classes = discover_probes(probes_dir)
-
-    available_probes = list(probe_classes.keys())
-    if "all" in probes_to_run:
-        probes_to_run = available_probes
-
-    print(f"🧩 Available probes: {available_probes}")
-    print(f"✅ Selected probes: {probes_to_run}")
-
+# ================================================================
+# 🚀 Core Runner Logic
+# ================================================================
+def run_probes(
+    probes_to_run,
+    concepts,
+    num_images,
+    device,
+    config,
+    erasing_type,
+    pipeline_path=None,
+    unet_path=None,
+):
     if not pipeline_path and not unet_path:
-        raise ValueError(
-            "❌ You must provide either --pipeline_path or --unet_path to load a model."
-        )
+        raise ValueError("❌ You must provide either --pipeline_path or --unet_path.")
+
+    if "all" in [p.lower() for p in probes_to_run]:
+        probes_to_run = list(ALL_PROBES.keys())
+
+    print(f"\n🧠 Running probes: {probes_to_run}")
+    print(f"📦 Model source: {'Pipeline' if pipeline_path else 'UNet'}")
+    print(f"⚙️ Erasing type: {erasing_type}")
+    print(f"🎯 Concepts: {concepts}\n")
 
     for concept in concepts:
-        print(f"\n⚙️ Running {probes_to_run} on {concept}")
-        print(f"📦 Using {'pipeline' if pipeline_path else 'UNet'} path: {pipeline_path or unet_path}")
-
         for probe_name in probes_to_run:
-            ProbeClass = probe_classes[probe_name]
+            probe_key = probe_name.lower()
+            if probe_key not in ALL_PROBES:
+                print(f"⚠️ Unknown probe '{probe_name}' — skipping.")
+                continue
+
+            ProbeClass = ALL_PROBES[probe_key]
+            output_dir = RESULTS_DIR / erasing_type / concept / probe_key
+            ensure_dir(output_dir)
+
+            print(f"\n➡️ Running {probe_key} on '{concept}' ({erasing_type})")
             probe = ProbeClass(
                 pipeline_path=pipeline_path,
                 unet_path=unet_path,
@@ -93,16 +104,17 @@ def run_all(probes_to_run, concepts, num_images, device, config, erasing_type, p
                 device=device,
                 config=config,
             )
+            probe.output_dir = str(output_dir)
+
             try:
                 probe.run(num_images=num_images, debug=True)
+                print(f"✅ {probe_key} completed successfully.")
             except Exception as e:
-                print(f"❌ {probe_name} failed for {concept}: {e}")
+                print(f"❌ {probe_key} failed for {concept}: {e}")
 
-
-# ============================================================
-# 🧮 4️⃣ CLI Interface
-# ============================================================
-
+# ================================================================
+# 🏁 CLI Entry Point
+# ================================================================
 def main():
     parser = argparse.ArgumentParser(description="Run concept erasure probes.")
     parser.add_argument("--concept", nargs="+", help="Concepts to test")
@@ -116,22 +128,40 @@ def main():
 
     args = parser.parse_args()
 
+    # Validation logic
     if args.pipeline_path and args.unet_path:
-        parser.error("❌ Please provide only one of --pipeline_path or --unet_path, not both.")
+        parser.error("❌ Please provide only one of --pipeline_path or --unet_path.")
     if not args.pipeline_path and not args.unet_path:
         parser.error("❌ You must provide either --pipeline_path or --unet_path.")
+    if not args.erasing_type:
+        parser.error("❌ You must provide --erasing_type to name the method (e.g., uce, stereo, rece).")
+    if not args.concept:
+        parser.error("❌ You must specify at least one --concept.")
 
     config = load_config(args.config)
-    run_all(
+
+    run_probes(
         probes_to_run=args.probes,
         concepts=args.concept,
         num_images=args.num_images,
         device=args.device,
         config=config,
-        erasing_type = args.erasing_type,
+        erasing_type=args.erasing_type,
         pipeline_path=args.pipeline_path,
         unet_path=args.unet_path,
     )
+
+    print(f"\n{'='*70}")
+    print(f"📊 Running Evaluator on results in '{RESULTS_DIR}'")
+    print(f"{'='*70}")
+    try:
+        evaluator = Evaluator(RESULTS_DIR)
+        evaluator.evaluate()
+        print("✅ Evaluation completed successfully!")
+    except Exception as e:
+        print(f"❌ Evaluation failed: {e}")
+
+    print("\n🎉 Runner completed!")
 
 if __name__ == "__main__":
     main()

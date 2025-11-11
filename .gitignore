@@ -1,3 +1,4 @@
+!data
 *.jpg
 *.png
 *.jpeg
@@ -11,9 +12,31 @@
 *.pyc
 local_imagenet_full/
 local_imagenet_fixed_subsets/
-/share/u/kevin/DiffusionConceptErasure/classifier_guidance/image_test.ipynb
 *.log
 *.csv
 archive/
 !images/Figure1.png
 *.pyc
+!data
+!data/prompts/
+!data/prompts/*.csv
+!data
+*.jpg
+*.png
+*.jpeg
+*.arrow
+*.json
+*.pt
+*.safetensors
+*.pkl
+*.bin
+*.pyc
+local_imagenet_full/
+local_imagenet_fixed_subsets/
+*.log
+*.csv
+archive/
+!images/Figure1.png
+
+# Include demo results
+!data/prompts/*.csv

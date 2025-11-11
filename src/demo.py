@@ -30,10 +30,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT_DIR / "data" / "results"
 
 BASE_MODEL_DIR = "DiffusionConceptErasure"
-CONFIG_PATH = "configs/minimal.yaml"  # Changed to use minimal config
-CONCEPTS = ["airliner", "church"]
-MODELS = ["esdx", "uce", "stereo", "rece"]
-NUM_IMAGES = 1
+CONFIG_PATH = "configs/default.yaml"  # Changed to use minimal config
+CONCEPTS = ["church"]
+MODELS = ["uce", "stereo", "rece"]
+NUM_IMAGES = 30
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ============================================================

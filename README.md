@@ -1,6 +1,6 @@
 # When Are Concepts Erased From Diffusion Models? (NeurIPS 2025)
 
-[**Project website**](http://concepts.baulab.info/) | [**Paper on arXiv**](https://arxiv.org/abs/2505.17013) | [**Finetuned model and classifier weights**](https://huggingface.co/DiffusionConceptErasure)
+[**Project website**](http://unerasing.baulab.info/) | [**Paper on arXiv**](https://arxiv.org/abs/2505.17013) | [**Finetuned model and classifier weights**](https://huggingface.co/DiffusionConceptErasure)
 
 ![Figure 1](images/Figure1.png)
 
@@ -18,7 +18,7 @@ Create and activate the provided Conda environment:
 
 ```bash
 git clone https://github.com/kevinlu4588/WhenAreConceptsErased.git
-cd cd WhenAreConceptsErased
+cd WhenAreConceptsErased
 pip install -r requirements.txt
 ```
 
@@ -36,7 +36,6 @@ This will:
 2. Save generated images under `data/results/`
 3. Automatically compute evaluation metrics (CLIP similarity and classification accuracy)
 
-
 ## Running Probes on Your Model
 
 To run the probes on your own model:
@@ -48,13 +47,27 @@ python runner.py --concept <your_concept> --pipeline_path <path_to_your_model>
 
 For example:
 ```bash
-python runner.py --concept airliner --pipeline_path kevinlu4588/esd-x-airliner
+python runner.py --concept airliner --pipeline_path DiffusionConceptErasure/esdx_airliner
 ```
 
 This will run all probes by default. You can also specify individual probes:
 ```bash
 python runner.py --concept airliner --pipeline_path <model_path> --probes standardpromptprobe noisebasedprobe
 ```
+
+## Key Notebooks
+
+We provide several Jupyter notebooks that demonstrate our probing techniques and evaluation pipeline:
+
+### 📊 Core Probe Implementations
+
+- **[Noise-based Probing](probe_notebooks/noise-based.ipynb)**: Walkthrough showing how we manipulate diffusion trajectories to reveal latent concept knowledge in erased models
+
+- **[Classifier Guidance](probe_notebooks/classifier_guidance.ipynb)**: Demonstration of applying classifier guidance to steer erased models back toward generating the target concept
+
+### 📈 Results & Evaluation
+
+- **[Demo Results Visualization](probe_notebooks/eval.ipynb)**: Visualization of probe demo results, including CLIP similarity scores, classification accuracies, and side-by-side comparisons across different erasure methods.
 
 ## Training new latent classifiers
 
@@ -67,6 +80,19 @@ python runner.py --concept airliner --pipeline_path <model_path> --probes standa
     --epochs 70 --batch-size 8 --output-dir "./my_classifiers"
   ```
 
+## Probe Execution Times for Demo
+
+Running the probes on an NVIDIA A6000 GPU, typical execution times for a single concept/model pair are:
+
+| Probe | Time per Image | Total Time (30 prompts) |
+|-------|---------------|------------------------|
+| **Standard Prompt** | 2 seconds | 1 minute |
+| **Inpainting** | 2 seconds | 1 minute |
+| **Diffusion Completion** | 2 seconds | 1 minute |
+| **Noise-based** | 2 seconds × 24 samples | 24 minutes |
+| **Classifier Guidance** | 2 seconds × 24 samples | 24 minutes |
+| **Noise-based + Classifier** | 2 seconds × 24 samples | 24 minutes |
+| **Textual Inversion** | - | 60 minute (training time per concept model pair)|
 
 ## 📖 Citation
 

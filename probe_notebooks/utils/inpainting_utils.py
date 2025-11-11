@@ -5,44 +5,6 @@ from diffusers import StableDiffusionPipeline, AutoPipelineForInpainting
 from PIL import Image, ImageDraw
 import numpy as np
 
-def load_model_inpaint_pipeline(model_folder_path, foundation_path):
-        """
-        Load an enhanced Stable Diffusion inpainting pipeline from a folder containing model components.
-
-        Args:
-            model_folder_path (str): Path to the folder containing the fine-tuned model components.
-            foundation_path (str): Path to the foundation model for pre-trained components.
-
-        Returns:
-            StableDiffusionInpaintPipeline: The inpainting pipeline with updated weights.
-        """
-
-        # Step 1: Load the fine-tuned pipeline directly
-        fine_tuned_pipeline = StableDiffusionPipeline.from_pretrained(
-            model_folder_path,
-            torch_dtype=torch.float16
-        )
-        fine_tuned_pipeline.to("cuda")
-
-        # Access the fine-tuned UNet and text encoder directly from the pipeline
-        fine_tuned_unet = fine_tuned_pipeline.unet
-        fine_tuned_text_encoder = fine_tuned_pipeline.text_encoder
-
-        # Optional: You can combine this with components from the foundation pipeline
-        foundation_pipeline = AutoPipelineForInpainting.from_pretrained(
-            foundation_path,
-            torch_dtype=torch.float16
-        )
-        foundation_pipeline.to("cuda")
-
-        # Example: Replace the UNet in the foundation pipeline with the fine-tuned UNet
-        foundation_pipeline.unet = fine_tuned_unet
-        foundation_pipeline.text_encoder = fine_tuned_text_encoder
-
-        # Disable safety checker if required
-        foundation_pipeline.safety_checker = None
-
-        return foundation_pipeline
 def draw_mask_outline(image, mask, outline_color=(255, 0, 0), fill_color=(255, 255, 255)):
     """Draws a red outline around the mask and optionally fills it with white."""
     mask_array = np.array(mask)

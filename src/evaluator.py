@@ -208,5 +208,16 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    evaluator = Evaluator("classifier_results")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Evaluate diffusion model results using CLIP and ResNet classifiers.")
+    parser.add_argument(
+        "--results_dir",
+        type=str,
+        required=True,
+        help="Path to the root directory containing model outputs to evaluate."
+    )
+    args = parser.parse_args()
+
+    evaluator = Evaluator(results_root=args.results_dir)
     evaluator.evaluate()
