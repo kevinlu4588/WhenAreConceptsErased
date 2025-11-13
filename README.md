@@ -40,12 +40,13 @@ To run the probes on your own model:
 
 ```bash
 cd src
-python runner.py --concept <your_concept> --pipeline_path <path_to_your_model>
+python runner.py --concept <your_concept> --pipeline_path <path_to_your_model> --erasing_type <name_of_erasing_method>
 ```
 
 For example:
 ```bash
-python runner.py --concept airliner --pipeline_path DiffusionConceptErasure/esdx_airliner
+python runner.py --concept airliner --pipeline_path "DiffusionConceptErasure/esdx_airliner" --erasing_type esdx
+python runner.py --concept airliner --unet_path <path_to_finetuned_unet> --erasing_type uce
 ```
 
 This will run all probes by default. You can also specify individual probes:
