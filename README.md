@@ -8,8 +8,6 @@
 
 In concept erasure, a model is modified to selectively prevent it from generating a target concept. Despite the rapid development of new methods, it remains unclear how thoroughly these approaches remove the target concept from the model.
 
-We begin by proposing **two conceptual models for the erasure mechanism in diffusion models**: (i) interfering with the model's internal guidance processes, and (ii) reducing the unconditional likelihood of generating the target concept, potentially removing it entirely.
-
 To assess whether a concept has been truly erased from the model, we introduce **a comprehensive suite of independent probing techniques**: supplying visual context, modifying the diffusion trajectory, applying classifier guidance, and analyzing the model's alternative generations that emerge in place of the erased concept. Our results shed light on the value of exploring concept erasure robustness outside of adversarial text inputs, and emphasize the importance of comprehensive evaluations for erasure in diffusion models.
 
 ## Environment Setup
@@ -59,13 +57,13 @@ python runner.py --concept airliner --pipeline_path <model_path> --probes standa
 
 We provide several Jupyter notebooks that demonstrate our probing techniques and evaluation pipeline:
 
-### 📊 Core Probe Implementations
+### Core Probe Implementations
 
 - **[Noise-based Probing](probe_notebooks/noise-based.ipynb)**: Walkthrough showing how we manipulate diffusion trajectories to reveal latent concept knowledge in erased models
 
 - **[Classifier Guidance](probe_notebooks/classifier_guidance.ipynb)**: Demonstration of applying classifier guidance to steer erased models back toward generating the target concept
 
-### 📈 Results & Evaluation
+### Results & Evaluation
 
 - **[Demo Results Visualization](probe_notebooks/eval.ipynb)**: Visualization of probe demo results, including CLIP similarity scores, classification accuracies, and side-by-side comparisons across different erasure methods.
 
@@ -92,7 +90,7 @@ Running the probes on an NVIDIA A6000 GPU, typical execution times for a single 
 | **Noise-based** | 2 seconds × 24 samples | 24 minutes |
 | **Classifier Guidance** | 2 seconds × 24 samples | 24 minutes |
 | **Noise-based + Classifier** | 2 seconds × 24 samples | 24 minutes |
-| **Textual Inversion** | - | 60 minute (training time per concept model pair)|
+| **Textual Inversion** | - | 60 minutes (training time per concept model pair)|
 
 ## 📖 Citation
 
