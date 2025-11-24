@@ -507,7 +507,7 @@ class DiffusionPipeline(ConfigMixin, PushToHubMixin):
 
                 <Tip warning={true}>
 
-                🧪 This is an experimental feature and may change in the future.
+                This is an experimental feature and may change in the future.
 
                 </Tip>
 
@@ -1200,7 +1200,7 @@ class DiffusionPipeline(ConfigMixin, PushToHubMixin):
 
                 <Tip warning={true}>
 
-                🧪 This is an experimental feature and may change in the future.
+                This is an experimental feature and may change in the future.
 
                 </Tip>
 
@@ -1635,7 +1635,7 @@ class DiffusionPipeline(ConfigMixin, PushToHubMixin):
 
         <Tip warning={true}>
 
-        ⚠️ When memory efficient attention and sliced attention are both enabled, memory efficient attention takes
+        WARNING: When memory efficient attention and sliced attention are both enabled, memory efficient attention takes
         precedent.
 
         </Tip>
@@ -1696,7 +1696,7 @@ class DiffusionPipeline(ConfigMixin, PushToHubMixin):
 
         <Tip warning={true}>
 
-        ⚠️ Don't enable attention slicing if you're already using `scaled_dot_product_attention` (SDPA) from PyTorch
+        WARNING: Don't enable attention slicing if you're already using `scaled_dot_product_attention` (SDPA) from PyTorch
         2.0 or xFormers. These attention computations are already very memory efficient so you won't need to enable
         this function. If you enable attention slicing with SDPA or xFormers, it can lead to serious slow downs!
 
@@ -1935,7 +1935,7 @@ class StableDiffusionMixin:
 
         <Tip warning={true}>
 
-        This API is 🧪 experimental.
+        This API is experimental.
 
         </Tip>
 
@@ -1964,7 +1964,7 @@ class StableDiffusionMixin:
 
         <Tip warning={true}>
 
-        This API is 🧪 experimental.
+        This API is experimental.
 
         </Tip>
 

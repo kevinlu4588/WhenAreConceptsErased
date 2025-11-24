@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ================================================================
-# 🧠 Test script for running all probes and evaluation
+# Test script for running all probes and evaluation
 # ================================================================
 # Available Probes:
 # - StandardPromptProbe: Basic prompt-based image generation
@@ -24,7 +24,7 @@ from probes.textual_inversion_probe import TextualInversionProbe
 from evaluator import Evaluator
 
 # ============================================================
-# 🔧 Configuration
+# Configuration
 # ============================================================
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT_DIR / "data" / "results"
@@ -37,7 +37,7 @@ NUM_IMAGES = 30
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ============================================================
-# 🧩 Utility helpers
+# Utility helpers
 # ============================================================
 def ensure_dir(path: str):
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -48,10 +48,10 @@ def ensure_base_model_images(concept: str, num_images: int):
     existing_images = list(base_output_dir.glob("*.png"))
 
     if len(existing_images) >= num_images:
-        print(f"✅ Found {len(existing_images)} base images for '{concept}'")
+        print(f"Found {len(existing_images)} base images for '{concept}'")
         return
 
-    print(f"⚠️ No base images found for '{concept}', running StandardPromptProbe on base model...")
+    print(f"No base images found for '{concept}', running StandardPromptProbe on base model...")
 
     from probes.standard_prompt_probe import StandardPromptProbe
     config = load_config(CONFIG_PATH)
@@ -72,7 +72,7 @@ def ensure_base_model_images(concept: str, num_images: int):
     )
     probe.output_dir = str(base_output_dir)
     probe.run(num_images=num_images, debug=True)
-    print(f"✅ Generated {num_images} base images for '{concept}'")
+    print(f"Generated {num_images} base images for '{concept}'")
 
 
 def make_pipeline_path(model: str, concept: str):
@@ -92,11 +92,11 @@ def load_config(config_path="configs/default.yaml"):
     return default_config
 
 # ============================================================
-# 🚀 Core Execution Logic
+# Core Execution Logic
 # ============================================================
 def run_all_probes_for_concept_and_model(concept: str, model: str):
     print(f"\n{'='*70}")
-    print(f"🎯 Running ALL PROBES for {model.upper()} on concept '{concept}'")
+    print(f"Running ALL PROBES for {model.upper()} on concept '{concept}'")
     print(f"{'='*70}")
 
     # Ensure base model images exist before other probes
@@ -164,7 +164,7 @@ def run_all_probes_for_concept_and_model(concept: str, model: str):
 
     # Run each probe
     for probe_info in probes_to_run:
-        print(f"\n➡️ Running {probe_info['name']}: {concept} ({model})")
+        print(f"\n Running {probe_info['name']}: {concept} ({model})")
         
         # Create output directory
         ensure_dir(probe_info["output_dir"])
@@ -182,31 +182,31 @@ def run_all_probes_for_concept_and_model(concept: str, model: str):
         
         # Run probe with any additional kwargs
         probe.run(num_images=NUM_IMAGES, **probe_info["kwargs"])
-        print(f"✅ {probe_info['name']} completed successfully")
+        print(f"{probe_info['name']} completed successfully")
 
 # ============================================================
-# 🏁 Main
+# Main
 # ============================================================
 if __name__ == "__main__":
-    print(f"🧠 Running ALL probes for {len(CONCEPTS)} concepts × {len(MODELS)} models")
+    print(f"Running ALL probes for {len(CONCEPTS)} concepts x {len(MODELS)} models")
     base_model = "CompVis/stable-diffusion-v1-4"
     # Run all probes
     for concept in CONCEPTS:
         for model in MODELS:
             run_all_probes_for_concept_and_model(concept, model)
 
-    print(f"\n✅ All probes finished!")
+    print(f"\nAll probes finished!")
     
     # Run evaluator
     print(f"\n{'='*70}")
-    print(f"📊 Running Evaluator on results in '{RESULTS_DIR}'")
+    print(f"Running Evaluator on results in '{RESULTS_DIR}'")
     print(f"{'='*70}")
     
     try:
         evaluator = Evaluator(RESULTS_DIR)
         evaluator.evaluate()
-        print("✅ Evaluation completed successfully!")
+        print("Evaluation completed successfully!")
     except Exception as e:
-        print(f"❌ Evaluation failed: {e}")
+        print(f"Evaluation failed: {e}")
 
-    print("\n🎉 Test script completed!")
+    print("\nTest script completed!")

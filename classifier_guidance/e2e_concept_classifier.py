@@ -78,22 +78,22 @@ def check_imagenet_exists(imagenet_dir):
 def download_imagenet(imagenet_dir, base_dir):
     """Download ImageNet dataset using the download script."""
     print(f"\n{'='*70}")
-    print("📥 DOWNLOADING IMAGENET")
+    print("DOWNLOADING IMAGENET")
     print(f"{'='*70}\n")
     
-    print("⚠️  ImageNet download will:")
+    print("WARNING: ImageNet download will:")
     print("   - Download from HuggingFace (no authentication required)")
     print("   - Require ~150GB of disk space")
     print("   - Take several hours depending on connection speed")
     
     response = input("\nDo you want to proceed with download? [y/N]: ")
     if response.lower() != 'y':
-        print("❌ Download cancelled. Please provide ImageNet data manually.")
+        print("Download cancelled. Please provide ImageNet data manually.")
         sys.exit(1)
     
     download_script = os.path.join(base_dir, "download_imagenet_classes.py")
     if not os.path.exists(download_script):
-        print(f"❌ Download script not found: {download_script}")
+        print(f"ERROR: Download script not found: {download_script}")
         sys.exit(1)
     
     # Set environment variable for the download script
@@ -101,7 +101,7 @@ def download_imagenet(imagenet_dir, base_dir):
     env['DCE_BASE_DIR'] = os.path.dirname(base_dir)
     
     cmd = [sys.executable, download_script]
-    print(f"\n🚀 Running: {' '.join(cmd)}")
+    print(f"\nRunning: {' '.join(cmd)}")
     
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
@@ -113,9 +113,9 @@ def download_imagenet(imagenet_dir, base_dir):
     
     ret = process.wait()
     if ret == 0:
-        print("\n✅ ImageNet download completed successfully!")
+        print("\nImageNet download completed successfully!")
     else:
-        print(f"\n❌ Download failed with exit code {ret}")
+        print(f"\nERROR: Download failed with exit code {ret}")
         sys.exit(1)
 
 
@@ -125,12 +125,12 @@ def create_subset(concept, imagenet_dir, subset_dir, n_neg, base_dir, force=Fals
     subset_path = os.path.join(subset_dir, concept_safe)
     
     if os.path.exists(subset_path) and not force:
-        print(f"   ✅ Subset already exists → {subset_path}")
+        print(f"   Subset already exists -> {subset_path}")
         return True
     
     create_script = os.path.join(base_dir, "create_class_subsets.py")
     if not os.path.exists(create_script):
-        print(f"   ❌ Create script not found: {create_script}")
+        print(f"   ERROR: Create script not found: {create_script}")
         return False
     
     cmd = [
@@ -153,10 +153,10 @@ def create_subset(concept, imagenet_dir, subset_dir, n_neg, base_dir, force=Fals
     elapsed = time() - start
     
     if ret == 0:
-        print(f"   ✅ Successfully created subset in {elapsed:.1f}s")
+        print(f"   Successfully created subset in {elapsed:.1f}s")
         return True
     else:
-        print(f"   ❌ Failed to create subset (exit code {ret})")
+        print(f"   ERROR: Failed to create subset (exit code {ret})")
         return False
 
 
@@ -167,13 +167,13 @@ def train_classifier(concept, subset_dir, save_dir, epochs, batch_size, lr,
     classifier_path = os.path.join(save_dir, f"{concept_safe}.pt")
     
     if os.path.exists(classifier_path) and not force:
-        print(f"   ⚠️  Classifier already exists → {classifier_path}")
-        print(f"   ℹ️  Use --force-retrain to retrain")
+        print(f"   WARNING: Classifier already exists -> {classifier_path}")
+        print(f"   INFO: Use --force-retrain to retrain")
         return True
     
     train_script = os.path.join(base_dir, "create_latent_classifier.py")
     if not os.path.exists(train_script):
-        print(f"   ❌ Train script not found: {train_script}")
+        print(f"   ERROR: Train script not found: {train_script}")
         return False
     
     cmd = [
@@ -198,10 +198,10 @@ def train_classifier(concept, subset_dir, save_dir, epochs, batch_size, lr,
     elapsed = time() - start
     
     if ret == 0:
-        print(f"   ✅ Successfully trained classifier in {elapsed/60:.1f} min")
+        print(f"   Successfully trained classifier in {elapsed/60:.1f} min")
         return True
     else:
-        print(f"   ❌ Failed to train classifier (exit code {ret})")
+        print(f"   ERROR: Failed to train classifier (exit code {ret})")
         return False
 
 
@@ -209,7 +209,7 @@ def evaluate_classifier(concept, subset_dir, classifier_path, save_dir, base_dir
     """Evaluate a trained classifier across timesteps."""
     evaluate_script = os.path.join(base_dir, "evaluate_latent_classifier.py")
     if not os.path.exists(evaluate_script):
-        print(f"   ❌ Evaluate script not found: {evaluate_script}")
+        print(f"   ERROR: Evaluate script not found: {evaluate_script}")
         return False
     
     concept_safe = concept.replace(", ", "_").replace(" ", "_")
@@ -234,10 +234,10 @@ def evaluate_classifier(concept, subset_dir, classifier_path, save_dir, base_dir
     elapsed = time() - start
     
     if ret == 0:
-        print(f"   ✅ Successfully evaluated classifier in {elapsed:.1f}s")
+        print(f"   Successfully evaluated classifier in {elapsed:.1f}s")
         return True
     else:
-        print(f"   ❌ Failed to evaluate classifier (exit code {ret})")
+        print(f"   ERROR: Failed to evaluate classifier (exit code {ret})")
         return False
 
 
@@ -254,9 +254,9 @@ def save_final_classifiers(concepts, save_dir, output_dir):
         if os.path.exists(src):
             shutil.copy2(src, dst)
             saved_files.append(dst)
-            print(f"   ✅ {concept} → {dst}")
+            print(f"   {concept} -> {dst}")
         else:
-            print(f"   ❌ Not found: {src}")
+            print(f"   ERROR: Not found: {src}")
     
     return saved_files
 
@@ -266,10 +266,10 @@ def main():
     
     # Print configuration
     print(f"\n{'='*70}")
-    print("🚀 END-TO-END CONCEPT CLASSIFIER TRAINING")
+    print("END-TO-END CONCEPT CLASSIFIER TRAINING")
     print(f"{'='*70}\n")
     
-    print("📋 Configuration:")
+    print("Configuration:")
     print(f"   Concepts: {', '.join(args.concepts)}")
     print(f"   ImageNet dir: {args.imagenet_dir}")
     print(f"   Subset dir: {args.subset_dir}")
@@ -286,18 +286,18 @@ def main():
     # Step 1: Check/Download ImageNet
     if not args.skip_download:
         print(f"\n{'='*70}")
-        print("📂 PHASE 1: Checking ImageNet dataset")
+        print("PHASE 1: Checking ImageNet dataset")
         print(f"{'='*70}\n")
         
         if not check_imagenet_exists(args.imagenet_dir):
-            print(f"❌ ImageNet not found at {args.imagenet_dir}")
+            print(f"ERROR: ImageNet not found at {args.imagenet_dir}")
             download_imagenet(args.imagenet_dir, args.base_dir)
         else:
-            print(f"✅ ImageNet found at {args.imagenet_dir}")
+            print(f"ImageNet found at {args.imagenet_dir}")
     
     # Step 2: Create subsets
     print(f"\n{'='*70}")
-    print("📂 PHASE 2: Creating class subsets")
+    print("PHASE 2: Creating class subsets")
     print(f"{'='*70}\n")
     
     successful_subsets = []
@@ -308,12 +308,12 @@ def main():
             successful_subsets.append(concept)
     
     if not successful_subsets:
-        print("\n❌ No subsets created successfully. Exiting.")
+        print("\nERROR: No subsets created successfully. Exiting.")
         sys.exit(1)
     
     # Step 3: Train classifiers
     print(f"\n{'='*70}")
-    print("🎓 PHASE 3: Training latent classifiers")
+    print("PHASE 3: Training latent classifiers")
     print(f"{'='*70}\n")
     
     # Use a temporary directory for training outputs
@@ -331,7 +331,7 @@ def main():
     # Step 4: Evaluate classifiers (optional)
     if not args.skip_evaluation:
         print(f"\n{'='*70}")
-        print("📈 PHASE 4: Evaluating classifiers")
+        print("PHASE 4: Evaluating classifiers")
         print(f"{'='*70}\n")
         
         for i, concept in enumerate(successful_training, 1):
@@ -343,23 +343,23 @@ def main():
     
     # Step 5: Save final classifiers
     print(f"\n{'='*70}")
-    print("💾 PHASE 5: Saving final classifiers")
+    print("PHASE 5: Saving final classifiers")
     print(f"{'='*70}\n")
     
     saved_files = save_final_classifiers(successful_training, temp_save_dir, args.output_dir)
     
     # Final summary
     print(f"\n{'='*70}")
-    print("🏁 FINAL SUMMARY")
+    print("FINAL SUMMARY")
     print(f"{'='*70}\n")
     
-    print(f"📊 Results:")
+    print(f"Results:")
     print(f"   Subsets created: {len(successful_subsets)}/{len(args.concepts)}")
     print(f"   Classifiers trained: {len(successful_training)}/{len(successful_subsets)}")
     print(f"   Files saved: {len(saved_files)}")
     
     if saved_files:
-        print(f"\n✅ Classifiers saved to: {args.output_dir}")
+        print(f"\nClassifiers saved to: {args.output_dir}")
         for f in saved_files:
             print(f"   - {os.path.basename(f)}")
     
@@ -384,13 +384,13 @@ def main():
     metadata_path = os.path.join(args.output_dir, 'training_metadata.json')
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
-    print(f"\n📄 Metadata saved to: {metadata_path}")
+    print(f"\nMetadata saved to: {metadata_path}")
     
     if len(successful_training) == len(args.concepts):
-        print("\n🎉 All tasks completed successfully!")
+        print("\nAll tasks completed successfully!")
     else:
         failed = set(args.concepts) - set(successful_training)
-        print(f"\n⚠️  Failed concepts: {', '.join(failed)}")
+        print(f"\nWARNING: Failed concepts: {', '.join(failed)}")
         sys.exit(1)
 
 

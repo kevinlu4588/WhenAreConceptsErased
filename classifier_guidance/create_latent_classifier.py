@@ -76,10 +76,10 @@ class BinDataset(torch.utils.data.Dataset):
 # ============================================================
 def precompute_latents(vae, dataloader, device, cache_path):
     if os.path.exists(cache_path):
-        print(f"⚡ Using cached latents at {cache_path}")
+        print(f"Using cached latents at {cache_path}")
         return torch.load(cache_path)
 
-    print(f"💾 Precomputing and caching latents to {cache_path}")
+    print(f"Precomputing and caching latents to {cache_path}")
     all_latents, all_labels = [], []
     for imgs, labels in tqdm(dataloader, desc="Encoding latents"):
         imgs = imgs.to(device)
@@ -90,7 +90,7 @@ def precompute_latents(vae, dataloader, device, cache_path):
     all_latents = torch.cat(all_latents)
     all_labels = torch.cat(all_labels)
     torch.save({"latents": all_latents, "labels": all_labels}, cache_path)
-    print(f"✅ Saved latents ({len(all_latents)} samples)")
+    print(f"Saved latents ({len(all_latents)} samples)")
     return {"latents": all_latents, "labels": all_labels}
 
 
@@ -117,15 +117,15 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
         raise FileNotFoundError(f"Subset not found at {subset_path}")
     os.makedirs(save_dir, exist_ok=True)
 
-    print(f"📂 Loading dataset from {subset_path}")
+    print(f"Loading dataset from {subset_path}")
     ds = load_from_disk(subset_path)
-    print(f"✅ Loaded {len(ds)} samples")
+    print(f"Loaded {len(ds)} samples")
 
     pos_count = sum(ds["label_bin"])
     neg_count = len(ds) - pos_count
-    print(f"📊 Class distribution - Pos: {pos_count}, Neg: {neg_count}")
+    print(f"Class distribution - Pos: {pos_count}, Neg: {neg_count}")
     pos_weight = torch.tensor(neg_count / pos_count, dtype=torch.float32, device=device)
-    print(f"⚖️ Using pos_weight={pos_weight.item():.2f} in BCE")
+    print(f"Using pos_weight={pos_weight.item():.2f} in BCE")
 
     ds = ds.shuffle(seed=42)
     n_train = int(0.9 * len(ds))
@@ -141,7 +141,7 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
     val_dl_raw = DataLoader(BinDataset(val_ds, transform), batch_size=batch_size,
                             shuffle=False, num_workers=2)
 
-    print(f"🔧 Loading VAE + scheduler...")
+    print(f"Loading VAE + scheduler...")
     vae = AutoencoderKL.from_pretrained(model_id, subfolder="vae").to(device).eval()
     scheduler = DDIMScheduler.from_pretrained(model_id, subfolder="scheduler")
     classifier = LatentClassifierT(scheduler=scheduler).to(device)
@@ -191,7 +191,7 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
             optimizer.step()
             total_loss += loss.item()
 
-        print(f"🧮 Epoch {epoch} Train Loss: {total_loss/len(train_dl):.4f}")
+        print(f"Epoch {epoch} Train Loss: {total_loss/len(train_dl):.4f}")
 
         # ---------------- Validation ----------------
         classifier.eval()
@@ -227,7 +227,7 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
         metrics["roc_auc"].append(roc_auc)
         metrics["tpr5"].append(tpr5)
 
-        print(f"✅ Epoch {epoch}")
+        print(f"Epoch {epoch}")
         print(f"   Val Loss={avg_val_loss:.4f} | PR AUC={pr_auc:.3f} | "
               f"ROC AUC={roc_auc:.3f} | TPR@5%FPR={tpr5:.3f}")
 
@@ -244,13 +244,13 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
                 "roc_auc": roc_auc,
                 "tpr5": tpr5,
             }, save_path)
-            print(f"💾 Saved best model  val_loss={val_loss}, "
-                  f"PR AUC={pr_auc:.3f}, TPR@5%FPR={tpr5:.3f}) → {save_path}")
+            print(f"Saved best model  val_loss={val_loss}, "
+                  f"PR AUC={pr_auc:.3f}, TPR@5%FPR={tpr5:.3f}) -> {save_path}")
 
         print()
 
     print("="*60)
-    print(f"🏁 Training finished for {concept}")
+    print(f"Training finished for {concept}")
     print(f"Best Val Loss={best_val_loss:.4f}, Best PR AUC={best_pr_auc:.3f}")
     print(f"Model saved at: {save_path}")
     print("="*60)
@@ -258,7 +258,7 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
     df = pd.DataFrame(metrics)
     csv_path = os.path.join(save_dir, f"{concept}_metrics.csv")
     df.to_csv(csv_path, index=False)
-    print(f"📈 Saved metrics to {csv_path}")
+    print(f"Saved metrics to {csv_path}")
 
     plt.figure(figsize=(10,6))
     plt.plot(df["epoch"], df["val_loss"], label="Val Loss", color="red")
@@ -277,7 +277,7 @@ def train_classifier(concept, subset_dir, save_dir, num_epochs=10, batch_size=8,
     plot_path = os.path.join(save_dir, f"{concept}_metrics.png")
     plt.savefig(plot_path, dpi=200)
     plt.close()
-    print(f"📊 Metrics plot saved to {plot_path}")
+    print(f"Metrics plot saved to {plot_path}")
 # ============================================================
 # CLI
 # ============================================================

@@ -30,7 +30,7 @@ class Evaluator:
         self.style_concepts = ["van_gogh", "picasso", "andy_warhol", "monet", "vangogh"]
 
     # ================================================================
-    # 🧮 Scoring methods
+    # Scoring methods
     # ================================================================
     def clip_score(self, image, prompt):
         inputs = self.clip_proc(text=[prompt], images=image, return_tensors="pt", padding=True).to(self.device)
@@ -65,7 +65,7 @@ class Evaluator:
         return top1_hit, top5_hit
 
     # ================================================================
-    # 🚀 Evaluation entry point
+    # Evaluation entry point
     # ================================================================
     def evaluate(self, erasing_types=None, concepts=None, probes=None):
         all_rows = []
@@ -95,7 +95,7 @@ class Evaluator:
             self._aggregate_results(df)
 
     # ================================================================
-    # 🧩 Probe-level evaluators
+    # Probe-level evaluators
     # ================================================================
     def _evaluate_normal_probe(self, erasing_type, concept, probe_name, probe_path):
         prompt = self._concept_to_prompt(concept)
@@ -120,7 +120,7 @@ class Evaluator:
                     "classifier_top5": top5,
                 })
             except Exception as e:
-                print(f"⚠️ Failed on {fname}: {e}")
+                print(f"Failed on {fname}: {e}")
         return rows
 
     def _evaluate_interference_probe(self, erasing_type, erased_concept, probe_name, probe_path):
@@ -148,7 +148,7 @@ class Evaluator:
                         "classifier_top5": top5,
                     })
                 except Exception as e:
-                    print(f"⚠️ Failed on {fname}: {e}")
+                    print(f"Failed on {fname}: {e}")
         return rows
 
     # ================================================================
@@ -185,7 +185,7 @@ class Evaluator:
             print(f"✅ Averaged results saved to {avg_csv}")
 
     # ================================================================
-    # 🔧 Helpers
+    # Helpers
     # ================================================================
     def _crop_to_mask(self, image):
         w, h = image.size

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ================================================================
-# 🚀 Runner for Concept Erasure Probes
+# Runner for Concept Erasure Probes
 # ================================================================
 # Usage examples:
 #   python runner.py --concept church \
@@ -27,7 +27,7 @@ from probes.textual_inversion_probe import TextualInversionProbe
 from evaluator import Evaluator
 
 # ================================================================
-# ⚙️ Utility Functions
+# Utility Functions
 # ================================================================
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT_DIR / "data" / "demo_results"
@@ -48,7 +48,7 @@ def load_config(config_path="configs/default.yaml"):
     return default_config
 
 # ================================================================
-# 🧩 Available Probes
+# Available Probes
 # ================================================================
 ALL_PROBES = {
     "standardpromptprobe": StandardPromptProbe,
@@ -60,7 +60,7 @@ ALL_PROBES = {
 }
 
 # ================================================================
-# 🚀 Core Runner Logic
+# Core Runner Logic
 # ================================================================
 def run_probes(
     probes_to_run,
@@ -73,28 +73,28 @@ def run_probes(
     unet_path=None,
 ):
     if not pipeline_path and not unet_path:
-        raise ValueError("❌ You must provide either --pipeline_path or --unet_path.")
+        raise ValueError("You must provide either --pipeline_path or --unet_path.")
 
     if "all" in [p.lower() for p in probes_to_run]:
         probes_to_run = list(ALL_PROBES.keys())
 
-    print(f"\n🧠 Running probes: {probes_to_run}")
-    print(f"📦 Model source: {'Pipeline' if pipeline_path else 'UNet'}")
-    print(f"⚙️ Erasing type: {erasing_type}")
-    print(f"🎯 Concepts: {concepts}\n")
+    print(f"\nRunning probes: {probes_to_run}")
+    print(f"Model source: {'Pipeline' if pipeline_path else 'UNet'}")
+    print(f"Erasing type: {erasing_type}")
+    print(f"Concepts: {concepts}\n")
 
     for concept in concepts:
         for probe_name in probes_to_run:
             probe_key = probe_name.lower()
             if probe_key not in ALL_PROBES:
-                print(f"⚠️ Unknown probe '{probe_name}' — skipping.")
+                print(f"Unknown probe '{probe_name}' - skipping.")
                 continue
 
             ProbeClass = ALL_PROBES[probe_key]
             output_dir = RESULTS_DIR / erasing_type / concept / probe_key
             ensure_dir(output_dir)
 
-            print(f"\n➡️ Running {probe_key} on '{concept}' ({erasing_type})")
+            print(f"\nRunning {probe_key} on '{concept}' ({erasing_type})")
             probe = ProbeClass(
                 pipeline_path=pipeline_path,
                 unet_path=unet_path,
@@ -108,12 +108,12 @@ def run_probes(
 
             try:
                 probe.run(num_images=num_images, debug=True)
-                print(f"✅ {probe_key} completed successfully.")
+                print(f"{probe_key} completed successfully.")
             except Exception as e:
-                print(f"❌ {probe_key} failed for {concept}: {e}")
+                print(f"{probe_key} failed for {concept}: {e}")
 
 # ================================================================
-# 🏁 CLI Entry Point
+# CLI Entry Point
 # ================================================================
 def main():
     parser = argparse.ArgumentParser(description="Run concept erasure probes.")
@@ -130,13 +130,13 @@ def main():
 
     # Validation logic
     if args.pipeline_path and args.unet_path:
-        parser.error("❌ Please provide only one of --pipeline_path or --unet_path.")
+        parser.error("Please provide only one of --pipeline_path or --unet_path.")
     if not args.pipeline_path and not args.unet_path:
-        parser.error("❌ You must provide either --pipeline_path or --unet_path.")
+        parser.error("You must provide either --pipeline_path or --unet_path.")
     if not args.erasing_type:
-        parser.error("❌ You must provide --erasing_type to name the method (e.g., uce, stereo, rece).")
+        parser.error("You must provide --erasing_type to name the method (e.g., uce, stereo, rece).")
     if not args.concept:
-        parser.error("❌ You must specify at least one --concept.")
+        parser.error("You must specify at least one --concept.")
 
     config = load_config(args.config)
 
@@ -152,16 +152,16 @@ def main():
     )
 
     print(f"\n{'='*70}")
-    print(f"📊 Running Evaluator on results in '{RESULTS_DIR}'")
+    print(f"Running Evaluator on results in '{RESULTS_DIR}'")
     print(f"{'='*70}")
     try:
         evaluator = Evaluator(RESULTS_DIR)
         evaluator.evaluate()
-        print("✅ Evaluation completed successfully!")
+        print("Evaluation completed successfully!")
     except Exception as e:
-        print(f"❌ Evaluation failed: {e}")
+        print(f"Evaluation failed: {e}")
 
-    print("\n🎉 Runner completed!")
+    print("\nRunner completed!")
 
 if __name__ == "__main__":
     main()

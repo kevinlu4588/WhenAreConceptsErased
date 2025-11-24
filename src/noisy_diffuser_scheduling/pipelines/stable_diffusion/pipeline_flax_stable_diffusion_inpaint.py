@@ -105,7 +105,7 @@ class FlaxStableDiffusionInpaintPipeline(FlaxDiffusionPipeline):
 
     <Tip warning={true}>
 
-    🧪 This is an experimental feature!
+    This is an experimental feature!
 
     </Tip>
 

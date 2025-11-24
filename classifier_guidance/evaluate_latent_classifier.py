@@ -27,11 +27,11 @@ batch_size = 8
 # ============================================================
 # 2️⃣ Load dataset + dataloader
 # ============================================================
-print(f"📂 Loading dataset from {subset_path}")
+print(f"Loading dataset from {subset_path}")
 ds = load_from_disk(subset_path)
 ds = ds.shuffle(seed=42)
 test_ds = ds.select(range(int(0.9 * len(ds)), len(ds)))
-print(f"✅ Loaded {len(test_ds)} test samples")
+print(f"Loaded {len(test_ds)} test samples")
 
 transform = transforms.Compose([
     transforms.Resize((image_size, image_size)),
@@ -49,12 +49,12 @@ scheduler = DDPMScheduler.from_pretrained(model_id, subfolder="scheduler")
 classifier = LatentClassifierT().to(device)
 classifier.load_state_dict(torch.load(save_path, map_location=device))
 classifier.eval()
-print(f"✅ Loaded classifier weights from {save_path}")
+print(f"Loaded classifier weights from {save_path}")
 
 # ============================================================
 # 4️⃣ Pass 1: Encode all test images once
 # ============================================================
-print("🧠 Encoding all test images into latents (1× pass)...")
+print("Encoding all test images into latents (1x pass)...")
 all_latents, all_labels = [], []
 with torch.no_grad():
     for imgs, labels in tqdm(test_dl, desc="Encoding"):
@@ -65,7 +65,7 @@ with torch.no_grad():
 
 all_latents = torch.cat(all_latents)
 all_labels = torch.cat(all_labels)
-print(f"✅ Cached {len(all_latents)} latents of shape {tuple(all_latents[0].shape)}")
+print(f"Cached {len(all_latents)} latents of shape {tuple(all_latents[0].shape)}")
 
 # ============================================================
 # 5️⃣ Pass 2: Evaluate across timesteps using cached latents
@@ -77,7 +77,7 @@ timesteps_to_eval = list(range(0, num_timesteps, step_interval))
 # lists for metrics
 acc_list, auc_list, tpr_list = [], [], []
 
-print(f"\n🔍 Evaluating classifier over {len(timesteps_to_eval)} timesteps...")
+print(f"\nEvaluating classifier over {len(timesteps_to_eval)} timesteps...")
 with torch.no_grad():
     for t_eval in tqdm(timesteps_to_eval, desc="Timesteps"):
         latents = all_latents.to(device)
@@ -106,10 +106,10 @@ with torch.no_grad():
             auc_list.append(auc)
             tpr_list.append(tpr)
     
-    print(f"\n✅ Evaluation complete! Peak metrics:")
-    print(f"   🎯 Best accuracy: {max(acc_list):.3f}")
-    print(f"   📊 Best AUC: {max(auc_list):.3f}")
-    print(f"   🎨 Best TPR: {max(tpr_list):.3f}")
+    print(f"\nEvaluation complete! Peak metrics:")
+    print(f"   Best accuracy: {max(acc_list):.3f}")
+    print(f"   Best AUC: {max(auc_list):.3f}")
+    print(f"   Best TPR: {max(tpr_list):.3f}")
     
     # ============================================================
     # 6️⃣ Plot and Save
@@ -127,7 +127,7 @@ with torch.no_grad():
     save_plot_path = os.path.join(args.save_dir, f"{args.concept}_performance_vs_timestep.png")
     plt.savefig(save_plot_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"📈 Saved performance plot to {save_plot_path}")
+    print(f"Saved performance plot to {save_plot_path}")
     
     # Save metrics CSV
     import pandas as pd
@@ -139,7 +139,7 @@ with torch.no_grad():
         'tpr': tpr_list
     })
     metrics_df.to_csv(metrics_path, index=False)
-    print(f"📊 Saved metrics to {metrics_path}")
+    print(f"Saved metrics to {metrics_path}")
 
 
 if __name__ == "__main__":
